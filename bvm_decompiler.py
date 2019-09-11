@@ -1,4 +1,5 @@
-
+import float_hex
+import struct
 
 offset_list = {
     'pointer_list_count': 0x18,
@@ -15,26 +16,46 @@ offset_list = {
 
 class bvm_data:
     asm_opcode = {
-        b'\x6b':1, b'\xab':2,
-        b'\x2c':0, b'\x6c':1, b'\xac':2, b'\xec':4,
-        b'\x2d':0, b'\x6d':1, b'\xad':2,
-        b'\x2e':0, b'\x6e':1,
-        b'\x15':0, b'\x33':0, b'\x55':1, b'\x95':2, b'\xd5':4,
-        b'\x18':0, b'\x58':1, b'\x98':2,
-        b'\x1a':0, b'\x5a':1, b'\x9a':2,
-        b'\x28':0, b'\x68':1, b'\xa8':2,
-        b'\x69':1, b'\xa9':2,
-        b'\x30':0,
-        b'\x16':0, b'\x56':1,
-        b'\x19':0, b'\x59':1,
-        b'\x14':0, b'\x54':1,
-        b'\x17':0, b'\x57':1,
-        b'\x1c':0, b'\x5c':1,
-        b'\x04':1, b'\x09':1, b'\x1f':1,
-        b'\x5b':1, b'\x9b':2,
-        b'\x2a':0,
-        b'\x66':1,
-        b'\x34':0, b'\x74':1, b'\xb4':2,
+        b'\x6b':('syscall',1), b'\xab':('syscall',2),
+        b'\x2c':('syscall1',0), b'\x6c':('syscall1',1), b'\xac':('syscall1',2), b'\xec':('syscall1',4),
+        b'\x2d':('syscall2',0), b'\x6d':('syscall2',1), b'\xad':('syscall2',2),
+        b'\x2e':('syscall3',0), b'\x6e':('syscall3',1),
+
+        b'\x15':('push',0), b'\x33':('push',0), b'\x55':('push',1), b'\x95':('push',2), b'\xd5':('push',4),
+        b'\x18':('pushs',0), b'\x58':('pushs',1), b'\x98':('pushs',2),
+        
+        b'\x1a':('ldstr',0), b'\x5a':('ldstr',1), b'\x9a':('ldstr',2),
+        
+        b'\x28':('jmp',0), b'\x68':('jmp',1), b'\xa8':('jmp',2),
+        b'\x69':('call',1), b'\xa9':('call',2),
+
+        b'\x30':('exit',0),
+
+        b'\x16':('store',0), b'\x56':('store',1),
+        b'\x19':('stores',0), b'\x59':('stores',1),
+        b'\x14':('load',0), b'\x54':('load',1),
+        b'\x17':('loads',0), b'\x57':('loads',1),
+
+        b'\x1c':('subs',0), b'\x5c':('subs',1),
+        b'\x5b':('adds',1), b'\x9b':('adds',2),
+
+        b'\x35':('beq',0), b'\x75':('beq',1), b'\xb5':('beq',2), 
+        b'\x26':('beqz',0), b'\x66':('beqz',1),b'\xa6':('beqz',2),
+        b'\x34':('bne',0), b'\x74':('bne',1),b'\xb4':('bne',2),
+        b'\x27':('bnez',0), b'\x67':('bnez',1),b'\xa7':('bnez',2),
+
+        b'\x2a':('ret',0),b'\x36':('storePop',0),b'\x02':('pop',0),b'\x03':('dup',0),
+
+        b'\x09':('neg',1), # 09 00
+        b'\x1f':('sez',1), # 1f 00
+        b'\x0a':('inc',1), 
+        
+        b'\x01':('storePush', 1),
+        b'\x04':('add',1), # 04 00 word opcode
+        b'\x20':('slt',1),
+        b'\x23':('sne',1),
+        b'\x1d':('sand',1),
+        b'\x24':('sge',1),
     }
     def __init__(self, file_path: str):
         read_size = 4
@@ -80,13 +101,21 @@ class bvm_data:
         while(offset < len(self.asm_chunk)):
             opcode = self.asm_chunk[offset:offset+1]
             offset += 1
-            operand_len = self.asm_opcode.get(opcode, 0)
-            buffer = [opcode.hex()]
-            if(operand_len):
+            opcode_asm, operand_len = self.asm_opcode.get(opcode, (f'-UNKNOWN-: {opcode.hex()}',0))
+            buffer = [opcode_asm]
+            if opcode_asm == 'ldstr' and operand_len == 0:
+                buffer.append(self.get_string(struct.pack('<I',self.index_str)))
+            if (operand_len):
                 operand = self.asm_chunk[offset:offset+operand_len]
-                buffer.append(operand.hex())
+                if (4 == operand_len and opcode_asm != 'ldstr'):
+                    operand_str = float_hex.hex_to_float(operand)
+                elif opcode_asm == 'ldstr':
+                    operand_str = self.get_string(operand, self.index_str)
+                else:
+                    operand_str = operand.hex()
                 offset += operand_len
-            print_data.append(str(buffer))
+                buffer.append(operand_str)
+            print_data.append('\t'.join(buffer))
             # print('いる？', self.asm_opcode.get(opcode, b'no------'))
         return print_data
     
@@ -107,26 +136,31 @@ class bvm_data:
             str_ = bytes_.decode(encoding='utf-16le', errors='ignore')
             print(str_)
             str_buffer.clear()
-#             print(offset)
+            # print(offset)
             utf16_byte = b''
         
     
-    def get_string(self, offset: bytes):
+    def get_string(self, offset: bytes, index: int = 0):
         end_bytes = b'\x00\x00'
         buffer = []
         utf16_byte = b''
         offset = int.from_bytes(offset, byteorder='little')
+        if index:
+            _data = self.data[index:]
+        else:
+            _data = self.data
         while(end_bytes != utf16_byte):
-            utf16_byte = self.data[offset:offset+2]
+            utf16_byte = _data[offset:offset+2]
             buffer.append(utf16_byte)
             offset += 2
         bytes_ = b''.join(buffer)
         return bytes_.decode(encoding='utf-16le')
         
-            
+
     def get_offset(self, offset1: int) -> int:
         return int.from_bytes(self.data[offset1:offset1+4], byteorder='little') 
 
     def get_content(self, offset1: int, offset2: int) -> bytes:
         data = self.data[offset1:offset2]
         return data
+
