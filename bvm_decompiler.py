@@ -51,13 +51,23 @@ class bvm_data:
             ukn_opcode = (f'-UNKNOWN-: {opcode.hex()}',0)
             int_operands = ['syscall', 'syscall1', 'syscall2', 'syscall3']
             opcode_asm, operand_len = bvm_model.asm_opcode.get(opcode, ukn_opcode)
-            buffer = [opcode_asm]
+            buffer = [opcode.hex(), opcode_asm]
             if opcode_asm == 'ldstr' and operand_len == 0:
                 buffer.append(self.get_string(struct.pack('<I',self.index_str)))
+            elif opcode_asm == 'push' and opcode == b'\x15' and operand_len == 0:
+                buffer.append('0')
+            elif opcode_asm == 'push' and opcode == b'\x33' and operand_len == 0:
+                buffer.append('1')
+            else:
+                pass
             if (operand_len):
                 operand = self.asm_chunk[offset:offset+operand_len]
                 if (4 == operand_len and opcode_asm != 'ldstr'):
                     operand_str = float_hex.hex_to_float(operand)
+                elif 1 == operand_len and opcode_asm == 'push':
+                    operand_str = str(struct.unpack('<b', operand)[0])
+                elif 2 == operand_len and opcode_asm == 'push':
+                    operand_str = str(struct.unpack('<h', operand)[0])
                 elif opcode_asm == 'ldstr':
                     operand_str = self.get_string(operand, self.index_str)
                 elif opcode_asm in int_operands:
