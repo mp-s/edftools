@@ -35,7 +35,7 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'],
                                filename)
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/asm', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
         file = request.files['file']
@@ -65,7 +65,7 @@ def upload_file_v2():
 
 if __name__ == '__main__':
     app.run(
-        host='localhost',
+        host='0.0.0.0',
         port=28000,
         debug=False
     )

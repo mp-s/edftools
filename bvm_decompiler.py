@@ -5,6 +5,12 @@ import float_hex
 
 class bvm_data:
 
+    jmp_loc_count = 0
+    unpack_lengh = {
+        1:'<b',
+        2:'<h',
+    }
+
     def __init__(self, file_path: str):
         with open(file_path, 'rb') as f:
             self.data = f.read()
@@ -44,41 +50,56 @@ class bvm_data:
     def asm_decompiler(self):
         self.asm_chunk = self.get_content(self.index_asm, self.index_str)
         offset = 0
+        line_num = 0
+        line_index_dict = {}
+        int_operands = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3']
         print_data = []
         while(offset < len(self.asm_chunk)):
             opcode = self.asm_chunk[offset:offset+1]
+            opcode_offset = str(offset)
+            line_index_dict[opcode_offset] = line_num
             offset += 1
             ukn_opcode = (f'-UNKNOWN-: {opcode.hex()}',0)
-            int_operands = ['syscall', 'syscall1', 'syscall2', 'syscall3']
             opcode_asm, operand_len = bvm_model.asm_opcode.get(opcode, ukn_opcode)
-            buffer = [opcode.hex(), opcode_asm]
-            if opcode_asm == 'ldstr' and operand_len == 0:
+            buffer = [str(line_num), opcode_offset, opcode.hex(), opcode_asm]
+            if opcode_asm == 'pushstr' and operand_len == 0:    # "pushstr 0"
                 buffer.append(self.get_string(struct.pack('<I',self.index_str)))
-            elif opcode_asm == 'push' and opcode == b'\x15' and operand_len == 0:
+            elif opcode == b'\x15':
                 buffer.append('0')
-            elif opcode_asm == 'push' and opcode == b'\x33' and operand_len == 0:
+            elif opcode == b'\x33':
                 buffer.append('1')
             else:
                 pass
             if (operand_len):
                 operand = self.asm_chunk[offset:offset+operand_len]
-                if (4 == operand_len and opcode_asm != 'ldstr'):
+                if (4 == operand_len and opcode_asm != 'pushstr'):
                     operand_str = float_hex.hex_to_float(operand)
-                elif 1 == operand_len and opcode_asm == 'push':
-                    operand_str = str(struct.unpack('<b', operand)[0])
-                elif 2 == operand_len and opcode_asm == 'push':
-                    operand_str = str(struct.unpack('<h', operand)[0])
-                elif opcode_asm == 'ldstr':
+                elif opcode_asm == 'push':
+                    operand_str = str(struct.unpack(self.unpack_lengh.get(operand_len, '<i'), operand)[0])
+                elif opcode_asm == 'pushstr':
                     operand_str = self.get_string(operand, self.index_str)
                 elif opcode_asm in int_operands:
                     operand_str = str(int.from_bytes(operand, byteorder='little'))
+                # elif 'jmp' in opcode_asm:
+                #     operand_address = struct.unpack(self.unpack_lengh.get(operand_len, '<i'), operand)[0]
+                #     next_jmp_address = offset + operand_address
+                #     jmp_line = line_index_dict.get(next_jmp_address, offset)
+                #     jmp_str = f'location_{self.jmp_loc_count}:'
+                #     self.jmp_loc_count += 1
+                #     print_data.insert(jmp_line, jmp_str)
                 else:
                     operand_str = operand.hex()
                 offset += operand_len
                 buffer.append(operand_str)
             print_data.append('\t'.join(buffer))
+            line_num += 1
         return print_data
-    
+
+    def get_jmp_name(self):
+        _str = f'jmp_loc_{self.jmp_loc_count}'
+        self.jmp_loc_count += 1
+        return _str
+
     def get_all_str(self):
         index = self.get_offset('string_chunk_index')
         size = self.get_offset('class_name_index')
@@ -98,7 +119,7 @@ class bvm_data:
             str_buffer.clear()
             utf16_byte = b''
         return str_list
-    
+
     def get_string(self, offset: bytes, index: int = 0) -> str:
         end_bytes = b'\x00\x00'
         buffer = []
@@ -114,7 +135,6 @@ class bvm_data:
             offset += 2
         bytes_ = b''.join(buffer)
         return bytes_.decode(encoding='utf-16le')
-        
 
     def get_offset(self, offset_name: str) -> int:
         offset = bvm_model.offset_list.get(offset_name)
