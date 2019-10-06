@@ -43,7 +43,7 @@ def upload_file():
             filename = random_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             file_url = url_for('uploaded_file', filename=filename)
-            s_bvm = bvm_decompiler.bvm_data(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            s_bvm = bvm_decompiler.BvmData(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             list_bvm = s_bvm.asm_decompiler()
             str_ = '<br>'.join(list_bvm)
             return html + str_
@@ -57,7 +57,7 @@ def upload_file_v2():
             filename = random_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             file_url = url_for('uploaded_file', filename=filename)
-            s_bvm = bvm_decompiler.bvm_data(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            s_bvm = bvm_decompiler.BvmData(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             list_str = s_bvm.get_all_str()
             str_ = '<br>'.join(list_str)
             return html + str_
