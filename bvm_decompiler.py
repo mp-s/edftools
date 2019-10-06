@@ -1,104 +1,147 @@
 import struct
 
-import bvm_model
+from bvm_model import *
 import float_hex
 
-class bvm_data:
+class BvmData:
 
     jmp_loc_count = 0
-    unpack_lengh = {
-        1:'<b',
-        2:'<h',
-    }
 
     def __init__(self, file_path: str):
         with open(file_path, 'rb') as f:
             self.data = f.read()
-        self.read_header()
+        if (self.data[0:4] == b'BVM '):
+            self._byteorder = 'little'
+            self._encoding = 'utf-16le'
+        else:
+            self._byteorder = 'big'
+            self._encoding = 'utf-16be'
+        self._read_header()
+        self._asm_jmp_mark = {}
 
-    def read_header(self):
+    def _read_header(self):
         # self.size = self.get_offset(offset_list['data_align_index'])
-        self.index_ptr_list = self.get_offset('pointer_list_index')
-        self.count_ptr_list = self.get_offset('pointer_list_count')
-        self.index_ptr2_list = self.get_offset('pointer_list2_index')
-        self.count_ptr2_list = self.get_offset('pointer_list2_count')
-        self.index_asm = self.get_offset('asm_code_chunk_index')
-        self.index_str = self.get_offset('string_chunk_index')
-        self.index_class = self.get_offset('class_name_index')
+        self._index_ptr_list = self._get_offset('pointer_list_index')
+        self._count_ptr_list = self._get_offset('pointer_list_count')
+        self._index_ptr2_list = self._get_offset('pointer_list2_index')
+        self._count_ptr2_list = self._get_offset('pointer_list2_count')
+        self._index_constructor = self._get_offset('store_chunk_index')
+        self._index_asm = self._get_offset('asm_code_chunk_index')
+        self._index_str = self._get_offset('string_chunk_index')
+        self._index_class = self._get_offset('class_name_index')
     
-    def slice_ptr1(self):
-        size = self.count_ptr_list * 4
-        offset2 = self.index_ptr_list + size
-        ptr_data = self.get_content(self.index_ptr_list, offset2)
+    def get_global_var_name(self):
+        size = self._count_ptr_list * 4
+        offset2 = self._index_ptr_list + size
+        ptr_data = self._get_content(self._index_ptr_list, offset2)
+        self._global_vars = []
         assert len(ptr_data) == size
         ptr_list = [ptr_data[i:i+4] for i in range(0, size, 4)]
-        for str_index in ptr_list:
-            str_ = self.get_string(str_index)
-            print(str_)
+        for index, str_index in enumerate(ptr_list):
+            str_ = self._get_string(str_index)
+            self._global_vars.append(f'name {str_} // {index}')
     
-    def slice_ptr2(self):
-        size = self.count_ptr2_list * 16
-        offset2 = self.index_ptr2_list + size
-        ptr2_data = self.get_content(self.index_ptr2_list, offset2)
+    def get_func_name(self):
+        size = self._count_ptr2_list * 0x10
+        end_offset = self._index_ptr2_list + size
+        ptr2_data = self._get_content(self._index_ptr2_list, end_offset)
         assert len(ptr2_data) == size
-        ptr2_list = [ptr2_data[i:i+16] for i in range(0, size, 16)]
+        ptr2_list = [ptr2_data[i:i+0x10] for i in range(0, size, 16)]
         for ptr2_chunk in ptr2_list:
-            result = tuple(ptr2_chunk[i:i+4] for i in range(0, 16, 4))
-            str_ = self.get_string(result[1])
-            print(str_, 'block ptr:', result)
+            result = [ptr2_chunk[i:i+4] for i in range(0, 16, 4)]
+            jmp_index = int.from_bytes(result[0], byteorder=self._byteorder)
+            str_ = self._get_string(result[1])
+            self._asm_jmp_mark[jmp_index] = f'\n\n{str_} :\n'
+            class_name_index = result[2].hex()
+            global_var_count = int.from_bytes(result[3],byteorder=self._byteorder)
+            # print(str_, f'block ptr:{jmp_index}, className_index:{class_name_index}, global stores count: {global_var_count}')
     
+    def get_constructor(self):
+        self.constructer_chunk = self._get_content(self._index_constructor, self._index_asm)
+        pass
+
+    '''
+    函数名, 跳转点插入方案
+    '''
+
     def asm_decompiler(self):
-        self.asm_chunk = self.get_content(self.index_asm, self.index_str)
+        self.asm_chunk = self._get_content(self._index_asm, self._index_str)
         offset = 0
-        line_num = 0
-        line_index_dict = {}
-        int_operands = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3']
-        print_data = []
+        operands_use_int = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3'] # unsigned int
+        operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
+        self._asm_lines = {}
+        # print_data = []
+
         while(offset < len(self.asm_chunk)):
             opcode = self.asm_chunk[offset:offset+1]
-            opcode_offset = str(offset)
-            line_index_dict[opcode_offset] = line_num
+            _opcode_offset = offset
             offset += 1
             ukn_opcode = (f'-UNKNOWN-: {opcode.hex()}',0)
-            opcode_asm, operand_len = bvm_model.asm_opcode.get(opcode, ukn_opcode)
-            buffer = [str(line_num), opcode_offset, opcode.hex(), opcode_asm]
+            opcode_asm, operand_len = asm_opcode.get(opcode, ukn_opcode)
+            buffer = [opcode.hex(), opcode_asm]
+
+            # operand_len == 0
             if opcode_asm == 'pushstr' and operand_len == 0:    # "pushstr 0"
-                buffer.append(self.get_string(struct.pack('<I',self.index_str)))
+                buffer.append(self._get_string(self._index_str.to_bytes(4, byteorder=self._byteorder, signed=False)))
             elif opcode == b'\x15':
                 buffer.append('0')
             elif opcode == b'\x33':
                 buffer.append('1')
             else:
                 pass
+
+
             if (operand_len):
                 operand = self.asm_chunk[offset:offset+operand_len]
-                if (4 == operand_len and opcode_asm != 'pushstr'):
-                    operand_str = float_hex.hex_to_float(operand)
-                elif opcode_asm == 'push':
-                    operand_str = str(struct.unpack(self.unpack_lengh.get(operand_len, '<i'), operand)[0])
-                elif opcode_asm == 'pushstr':
-                    operand_str = self.get_string(operand, self.index_str)
-                elif opcode_asm in int_operands:
-                    operand_str = str(int.from_bytes(operand, byteorder='little'))
-                # elif 'jmp' in opcode_asm:
-                #     operand_address = struct.unpack(self.unpack_lengh.get(operand_len, '<i'), operand)[0]
-                #     next_jmp_address = offset + operand_address
-                #     jmp_line = line_index_dict.get(next_jmp_address, offset)
-                #     jmp_str = f'location_{self.jmp_loc_count}:'
-                #     self.jmp_loc_count += 1
-                #     print_data.insert(jmp_line, jmp_str)
+
+                if (4 == operand_len and opcode_asm != 'pushstr'):  # all floats
+                    operand_str = self._convert_operand(operand, 4)  # float_hex.hex_to_float(operand)
+                elif opcode_asm == 'push':  # all numbers
+                    operand_str = self._convert_operand(operand, operand_len)
+                elif opcode_asm == 'pushstr':   # all bytes offset
+                    operand_str = self._get_string(operand, self._index_str)
+                elif opcode_asm in operands_use_int:    # all int
+                    operand_str = str(int.from_bytes(operand, byteorder=self._byteorder))
+                elif opcode_asm in operands_use_offset:
+                    pass
+                    '''
+                    获取jmp的操作数, (signed)
+                    记录每句字节码当前位置,
+                    jmp位置+操作数=要定位的字节码位置
+                    字节码位置 添加 跳转标记
+                    jmp替换位跳转标记
+                    '''
+                    operand_int = int(self._convert_operand(operand, operand_len))
+                    mark_offset = _opcode_offset + operand_int
+                    operand_str = f'location_{mark_offset}'
+                    self._asm_jmp_mark[mark_offset] = f'\n{operand_str} :'
                 else:
-                    operand_str = operand.hex()
+                    operand_str = operand.hex() if self._byteorder == 'big' else operand[::-1].hex()
+                
                 offset += operand_len
                 buffer.append(operand_str)
-            print_data.append('\t'.join(buffer))
-            line_num += 1
-        return print_data
 
-    def get_jmp_name(self):
-        _str = f'jmp_loc_{self.jmp_loc_count}'
-        self.jmp_loc_count += 1
-        return _str
+            self._asm_lines[_opcode_offset] = buffer
+            # print_data.append('\t'.join(buffer))
+
+        # return print_data
+        return self._asm_lines
+
+    def output_data(self):
+        out_buffer = []
+        self.get_global_var_name()
+        out_buffer.extend(self._global_vars)
+        for key, values in self._asm_lines.items():
+            jump_mark_str = self._asm_jmp_mark.get(key, None)
+            if jump_mark_str:
+                out_buffer.append(jump_mark_str)
+            space_length = 16 - 4 - len(values[1])
+            space_placeholder = ' ' * space_length
+            if len(values) == 3:
+                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}')
+            else:
+                out_buffer.append('  '.join(values))
+        return '\n'.join(out_buffer)
 
     def get_all_str(self):
         index = self.get_offset('string_chunk_index')
@@ -114,33 +157,78 @@ class bvm_data:
                 str_buffer.append(utf16_byte)
                 offset += 2
             bytes_ = b''.join(str_buffer)
-            str_ = bytes_.decode(encoding='utf-16le', errors='ignore')
+            str_ = bytes_.decode(encoding=self._encoding, errors='ignore')
             str_list.append(str_)
             str_buffer.clear()
             utf16_byte = b''
         return str_list
 
-    def get_string(self, offset: bytes, index: int = 0) -> str:
+    ''' 
+    大/小端处理
+    读取4字节的地址信息
+    读取1/2/4的数据 (并转换)
+    while方式读取string
+    '''
+
+    def _convert_operand(self, bytes_:bytes, bytes_length:int) -> str:
+        '''
+        signed int or
+        float
+        '''
+        enum_length = {
+            1: '<b',
+            2: '<h',
+            4: '<f',
+        } if self._byteorder == 'little' else {
+            1: '>b',
+            2: '>h',
+            4: '>f',
+        }
+        return str(struct.unpack(enum_length.get(bytes_length), bytes_)[0])
+
+    def _get_string(self, offset: bytes, index: int = 0) -> str:
         end_bytes = b'\x00\x00'
-        buffer = []
+        str_buffer = []
         utf16_byte = b''
-        offset = int.from_bytes(offset, byteorder='little')
+        offset = int.from_bytes(offset, byteorder=self._byteorder)
+
         if index:
             _data = self.data[index:]
         else:
             _data = self.data
+
         while(end_bytes != utf16_byte):
             utf16_byte = _data[offset:offset+2]
-            buffer.append(utf16_byte)
+            if end_bytes == utf16_byte:
+                break
+            str_buffer.append(utf16_byte)
             offset += 2
-        bytes_ = b''.join(buffer)
-        return bytes_.decode(encoding='utf-16le')
 
-    def get_offset(self, offset_name: str) -> int:
-        offset = bvm_model.offset_list.get(offset_name)
-        return int.from_bytes(self.data[offset:offset+bvm_model.read_size], byteorder='little') 
+        bytes_ = b''.join(str_buffer)
 
-    def get_content(self, offset1: int, offset2: int) -> bytes:
+        return bytes_.decode(encoding=self._encoding)
+
+    def _get_offset(self, offset_name: str) -> int:
+        offset = offset_list.get(offset_name)
+        return int.from_bytes(self.data[offset:offset+4], byteorder=self._byteorder, signed=False) 
+
+    def _get_content(self, offset1: int, offset2: int) -> bytes:
         data = self.data[offset1:offset2]
         return data
 
+if __name__ == "__main__":
+    import os, sys
+    if len(sys.argv) == 1:
+        path = r"d:\arena\EARTH DEFENSE FORCE 5\r\MISSION\M003\MISSION.BVM"
+        file_path = path
+        # print('Must import BVM file!')
+        # sys.exit()
+    else:
+        file_path = sys.argv[1]
+    if '.bvm' == os.path.splitext(file_path)[1].lower():
+        print('oik')
+        bvm_ = BvmData(file_path)
+        bvm_.get_func_name()
+        bvm_.asm_decompiler()
+        with open('r:/bvmoutput.asm', 'w') as f:
+            f.write(bvm_.output_data())

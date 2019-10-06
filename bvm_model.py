@@ -1,6 +1,4 @@
 
-read_size = 4
-
 offset_list = {
     'pointer_list_count': 0x18,
     'pointer_list_index': 0x1c,
