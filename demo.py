@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import bvm_decompiler
-from flask import Flask, request, url_for, send_from_directory
+from flask import Flask, request, url_for, send_from_directory, make_response, redirect
 from werkzeug import secure_filename
 
 ALLOWED_EXTENSIONS = set(['bvm', 'BVM'])
@@ -35,6 +35,14 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'],
                                filename)
 
+@app.route('/download/output.asm')
+def download():
+    upload_path = send_from_directory(app.config['UPLOAD_FOLDER'], 'output.asm', as_attachment=True)
+    response = make_response(upload_path)
+    # response.headers['Content-Disposition'] = \
+        # f"attachment; filename={upload_path.encode().decode('latin-1')}" # .format(filepath.encode().decode('latin-1'))
+    return response
+
 @app.route('/asm', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -44,9 +52,12 @@ def upload_file():
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             file_url = url_for('uploaded_file', filename=filename)
             s_bvm = bvm_decompiler.BvmData(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            list_bvm = s_bvm.asm_decompiler()
-            str_ = '<br>'.join(list_bvm)
-            return html + str_
+            s_bvm.get_func_name()
+            s_bvm.get_constructor()
+            s_bvm.asm_decompiler()
+            with open(os.path.join(app.config['UPLOAD_FOLDER'], 'output.asm'), 'w') as f:
+                f.write(s_bvm.output_data())
+            return redirect(url_for('download'))
     return html
 
 @app.route('/fullstr', methods=['GET', 'POST'])
@@ -62,6 +73,16 @@ def upload_file_v2():
             str_ = '<br>'.join(list_str)
             return html + str_
     return html
+
+@app.route('/')
+def index():
+    _html = '''
+    <h2>BVM功能选择</a>
+    <p/>
+    <a href="/asm"> 反汇编</a>
+    <a href="/fullstr"> 取全string</a>
+    '''
+    return _html
 
 if __name__ == '__main__':
     app.run(
