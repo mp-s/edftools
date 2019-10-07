@@ -6,8 +6,9 @@ import float_hex
 class BvmData:
 
     jmp_loc_count = 0
-
-    def __init__(self, file_path: str):
+    # 添加debug参数, 减少不必要噪音
+    def __init__(self, file_path: str, debug:int = False):
+        self._debug_mode = debug
         with open(file_path, 'rb') as f:
             self.data = f.read()
         if (self.data[0:4] == b'BVM '):
@@ -39,7 +40,7 @@ class BvmData:
         ptr_list = [ptr_data[i:i+4] for i in range(0, size, 4)]
         for index, str_index in enumerate(ptr_list):
             str_ = self._get_string(str_index)
-            self._global_vars.append(f'name {str_} // {index}')
+            self._global_vars.append(f'name {str_} // {hex(index)[2:]}')
     
     def get_func_name(self):
         size = self._count_ptr2_list * 0x10
@@ -51,34 +52,49 @@ class BvmData:
             result = [ptr2_chunk[i:i+4] for i in range(0, 16, 4)]
             jmp_index = int.from_bytes(result[0], byteorder=self._byteorder)
             str_ = self._get_string(result[1])
-            self._asm_jmp_mark[jmp_index] = f'\n\n{str_} :\n'
+            self._asm_jmp_mark[jmp_index] = f'\n{str_} :'
             class_name_index = result[2].hex()
             global_var_count = int.from_bytes(result[3],byteorder=self._byteorder)
-            # print(str_, f'block ptr:{jmp_index}, className_index:{class_name_index}, global stores count: {global_var_count}')
+            if self._debug_mode:
+                print(str_, f'block ptr:{jmp_index}, className_index:{class_name_index}, global stores count: {global_var_count}')
     
     def get_constructor(self):
-        self.constructer_chunk = self._get_content(self._index_constructor, self._index_asm)
+        self._construct_lines = {}
+        self.asm_decompiler(construct=True)
         pass
 
     '''
     函数名, 跳转点插入方案
     '''
+    def asm_decompiler(self, construct = False):
+        _construct_chunk = self._get_content(self._index_constructor, self._index_asm)
+        self._asm_lines = {}
+        _asm_chunk = self._get_content(self._index_asm, self._index_str)
+        if construct:
+            self._asm_decompiler(_construct_chunk, self._construct_lines)
+            pass
+        else:
+            self._asm_decompiler(_asm_chunk, self._asm_lines)
+            pass
 
-    def asm_decompiler(self):
-        self.asm_chunk = self._get_content(self._index_asm, self._index_str)
+    def _asm_decompiler(self, chunk:bytes, buffer_dict:dict) -> dict:
+        # if construct:
+        #     self.asm_chunk = self._get_content(self._index_constructor, self._index_asm)
+        # else:
+        # chunk = self._get_content(self._index_asm, self._index_str)
         offset = 0
         operands_use_int = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3'] # unsigned int
         operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
-        self._asm_lines = {}
+        # self._asm_lines = {}
         # print_data = []
 
-        while(offset < len(self.asm_chunk)):
-            opcode = self.asm_chunk[offset:offset+1]
+        while(offset < len(chunk)):
+            opcode = chunk[offset:offset+1]
             _opcode_offset = offset
             offset += 1
             ukn_opcode = (f'-UNKNOWN-: {opcode.hex()}',0)
             opcode_asm, operand_len = asm_opcode.get(opcode, ukn_opcode)
-            buffer = [opcode.hex(), opcode_asm]
+            buffer = [opcode.hex(), opcode_asm] if self._debug_mode else [opcode_asm]
 
             # operand_len == 0
             if opcode_asm == 'pushstr' and operand_len == 0:    # "pushstr 0"
@@ -92,7 +108,7 @@ class BvmData:
 
 
             if (operand_len):
-                operand = self.asm_chunk[offset:offset+operand_len]
+                operand = chunk[offset:offset+operand_len]
 
                 if (4 == operand_len and opcode_asm != 'pushstr'):  # all floats
                     operand_str = self._convert_operand(operand, 4)  # float_hex.hex_to_float(operand)
@@ -121,26 +137,38 @@ class BvmData:
                 offset += operand_len
                 buffer.append(operand_str)
 
-            self._asm_lines[_opcode_offset] = buffer
+            buffer_dict[_opcode_offset] = buffer
             # print_data.append('\t'.join(buffer))
 
         # return print_data
-        return self._asm_lines
+        return buffer_dict
 
     def output_data(self):
         out_buffer = []
         self.get_global_var_name()
         out_buffer.extend(self._global_vars)
+        constructor_name = self._get_string(self._index_class.to_bytes(4, byteorder=self._byteorder))
+        out_buffer.append(f'\n{constructor_name}::{constructor_name}:')
+        for values in self._construct_lines.values():
+            out_buffer.append('  '.join(values))
         for key, values in self._asm_lines.items():
             jump_mark_str = self._asm_jmp_mark.get(key, None)
             if jump_mark_str:
                 out_buffer.append(jump_mark_str)
-            space_length = 16 - 4 - len(values[1])
-            space_placeholder = ' ' * space_length
-            if len(values) == 3:
-                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}')
+            if self._debug_mode:
+                space_length = 16 - 4 - len(values[1])
+                space_placeholder = ' ' * space_length
+                if len(values) == 3:
+                    out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}')
+                else:
+                    out_buffer.append('  '.join(values))
             else:
-                out_buffer.append('  '.join(values))
+                space_length = 16 - 4 - len(values[0])
+                space_placeholder = ' ' * space_length
+                if len(values) == 2:
+                    out_buffer.append(f'  {values[0]}{space_placeholder}{values[1]}')
+                else:
+                    out_buffer.append('  '.join(values))
         return '\n'.join(out_buffer)
 
     def get_all_str(self):
@@ -229,6 +257,7 @@ if __name__ == "__main__":
         print('oik')
         bvm_ = BvmData(file_path)
         bvm_.get_func_name()
+        bvm_.get_constructor()
         bvm_.asm_decompiler()
         with open('r:/bvmoutput.asm', 'w') as f:
             f.write(bvm_.output_data())
