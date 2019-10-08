@@ -2,3 +2,5 @@ venv/
 uploads/
 __pycache__/
 .vscode/
+demo.py
+hello.py
