@@ -82,3 +82,62 @@ asm_opcode = {
     b'\x36': ('store', 0),
 
 }
+
+func_arg_types = {
+    b'\x01': 'int',
+    b'\x02': 'float',
+    b'\x03': 'string',
+}
+
+call_func_types = {
+    '1': 'Pop()',
+    '2': 'void RegisterEvent(function_name, ?, multiple_functions_per_event(?));',
+    '12': "WaitOnLoad(",
+    '13': 'LoadResource(',
+    "14": "LoadMap(",
+    '21': 'GetDifficulty(',
+
+    '44': 'void SoundController::PlayBgm(soundname);',
+    "100": "SetMap(",
+    '140': 'Factor_AllEnemyDestroy(',
+    '200': 'Wait(',
+    '300': 'PlayBGM(',
+    '1050': 'int loc_1401154BF(int, int);',
+
+    '1000': 'CreatePlayer(waypoint, 0);',
+    '1001': 'CreatePlayer(waypoint, 1);',
+    '1002': 'CreatePlayer(waypoint, 2);',
+    '1003': 'int loc_1401170F6(void)    Returns the number of local (?) players.',
+    '1005': 'int loc_140117223(int);',
+    '1006': 'void loc_140117304(int, int, int);',
+    '1007': 'void loc_1401173CB(int, int);',
+    '1010': 'int CreateFriend(float, wchar_t*, wchar_t*, bool);',
+    '1011': 'int CreateFriendSquad(wchar_t*, float, wchar_t*, wchar_t*, int, float, bool);',
+    '1012': 'void loc_1401174E5(wchar_t*, float, wchar_t*, int, float, bool);',
+    '1013': 'void loc_140117538(int, wchar_t*, float, wchar_t*, int, float);',
+    '1020': 'void CreatNeutral(wchar_t*, wchar_t*, float);',
+
+    '2002': 'void CreateEnemyGroup(waypoint, radius, sgo_name, count, health_scale, has_aggro);',
+    '2030': 'CreateEnemySquad(',
+
+    '3100': 'SetAiRouteSpeed(',
+    '3101': 'SetAiRoute(',
+
+    '9000': 'CreateEventFactorWait(',
+    '9001': 'CreateEventFactorTimer(',
+    '9002': 'CreateEventFactorWait2(',
+
+    '9050' : "CreateEventFactorCheckFlagTrue(",
+    '9051' : "CreateEventFactorCheckFlagFalse(",
+    
+    '9100': 'CreateEventFactorAllEnemyDestroy',
+
+    "9110": "CreateEventFactorTeamObjectCount(",
+    "9114": "CreateEventFactorTeamGeneratorObjectCount(",
+
+    '9201' : "CreateEventFactorObjectDestroy(",
+
+    '9300': 'CreateEventFactorAiMoveEnd(',
+    
+    '9400' : "CreateEventPlayerAreaCheck(",
+}

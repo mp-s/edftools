@@ -1,7 +1,8 @@
 import struct
 
-from bvm_model import *
 import float_hex
+from bvm_model import *
+
 
 class BvmData:
 
@@ -19,6 +20,8 @@ class BvmData:
             self._encoding = 'utf-16be'
         self._read_header()
         self._asm_jmp_mark = {}
+        self._construct_lines = {}
+        self._asm_lines = {}
 
     def _read_header(self):
         # self.size = self.get_offset(offset_list['data_align_index'])
@@ -47,46 +50,50 @@ class BvmData:
         end_offset = self._index_ptr2_list + size
         ptr2_data = self._get_content(self._index_ptr2_list, end_offset)
         assert len(ptr2_data) == size
+        
         ptr2_list = [ptr2_data[i:i+0x10] for i in range(0, size, 16)]
         for ptr2_chunk in ptr2_list:
-            result = [ptr2_chunk[i:i+4] for i in range(0, 16, 4)]
-            jmp_index = int.from_bytes(result[0], byteorder=self._byteorder)
-            str_ = self._get_string(result[1])
-            self._asm_jmp_mark[jmp_index] = f'\n{str_} :'
-            class_name_index = result[2].hex()
-            global_var_count = int.from_bytes(result[3],byteorder=self._byteorder)
+            _lst = [ptr2_chunk[i:i+4] for i in range(0, 16, 4)]
+            jmp_mark_index = self._get_int(_lst[0])
+            func_name = self._get_string(_lst[1])
+            arg_index = _lst[2]
+            arg_count = _lst[3][0]
+
+            _index = self._get_int(arg_index)
+            _arg_byte = self._get_content(_index, _index+1)
+            if  _arg_byte in func_arg_types:
+                types_name = []
+                if arg_count:
+                    types = self._get_content(_index, _index + arg_count)
+                    for arg_type in types:
+                        arg_type = arg_type.to_bytes(1, self._byteorder)
+                        types_name.append(func_arg_types.get(arg_type))
+                type_str = ', '.join(types_name)
+                return_string = f'\n{func_name}:  // {func_name}({type_str})'
+                pass # 有传参 有类型 后续处理
+            else:
+                class_name_ = self._get_string(arg_index)
+                return_string = f'\n{class_name_}::{func_name}:'
+            self._asm_jmp_mark[jmp_mark_index] = return_string
             if self._debug_mode:
-                print(str_, f'block ptr:{jmp_index}, className_index:{class_name_index}, global stores count: {global_var_count}')
+                print(func_name, f'block ptr:{jmp_mark_index}, className_index:{arg_index}, global stores count: {arg_count}')
     
     def get_constructor(self):
-        self._construct_lines = {}
-        self.asm_decompiler(construct=True)
+        _construct_chunk = self._get_content(self._index_constructor, self._index_asm)
+        self.__asm_decompiler(_construct_chunk, self._construct_lines)
         pass
 
-    '''
-    函数名, 跳转点插入方案
-    '''
-    def asm_decompiler(self, construct = False):
-        _construct_chunk = self._get_content(self._index_constructor, self._index_asm)
-        self._asm_lines = {}
+    def asm_decompiler(self):
         _asm_chunk = self._get_content(self._index_asm, self._index_str)
-        if construct:
-            self._asm_decompiler(_construct_chunk, self._construct_lines)
-            pass
-        else:
-            self._asm_decompiler(_asm_chunk, self._asm_lines)
-            pass
+        self.__asm_decompiler(_asm_chunk, self._asm_lines)
 
-    def _asm_decompiler(self, chunk:bytes, buffer_dict:dict) -> dict:
-        # if construct:
-        #     self.asm_chunk = self._get_content(self._index_constructor, self._index_asm)
-        # else:
-        # chunk = self._get_content(self._index_asm, self._index_str)
+
+    def __asm_decompiler(self, chunk:bytes, buffer_dict:dict) -> dict:
         offset = 0
         operands_use_int = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3'] # unsigned int
         operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
         # self._asm_lines = {}
-        # print_data = []
+
 
         while(offset < len(chunk)):
             opcode = chunk[offset:offset+1]
@@ -94,7 +101,7 @@ class BvmData:
             offset += 1
             ukn_opcode = (f'-UNKNOWN-: {opcode.hex()}',0)
             opcode_asm, operand_len = asm_opcode.get(opcode, ukn_opcode)
-            buffer = [opcode.hex(), opcode_asm] if self._debug_mode else [opcode_asm]
+            buffer = [opcode.hex(), opcode_asm]
 
             # operand_len == 0
             if opcode_asm == 'pushstr' and operand_len == 0:    # "pushstr 0"
@@ -106,9 +113,9 @@ class BvmData:
             else:
                 pass
 
-
             if (operand_len):
                 operand = chunk[offset:offset+operand_len]
+                comments = None
 
                 if (4 == operand_len and opcode_asm != 'pushstr'):  # all floats
                     operand_str = self._convert_operand(operand, 4)  # float_hex.hex_to_float(operand)
@@ -117,16 +124,10 @@ class BvmData:
                 elif opcode_asm == 'pushstr':   # all bytes offset
                     operand_str = self._get_string(operand, self._index_str)
                 elif opcode_asm in operands_use_int:    # all int
-                    operand_str = str(int.from_bytes(operand, byteorder=self._byteorder))
+                    operand_str = str(self._get_int(operand))
+                    # 添加注释
+                    comments = call_func_types.get(operand_str, None)
                 elif opcode_asm in operands_use_offset:
-                    pass
-                    '''
-                    获取jmp的操作数, (signed)
-                    记录每句字节码当前位置,
-                    jmp位置+操作数=要定位的字节码位置
-                    字节码位置 添加 跳转标记
-                    jmp替换位跳转标记
-                    '''
                     operand_int = int(self._convert_operand(operand, operand_len))
                     mark_offset = _opcode_offset + operand_int
                     operand_str = f'location_{mark_offset}'
@@ -136,39 +137,44 @@ class BvmData:
                 
                 offset += operand_len
                 buffer.append(operand_str)
+                if comments:
+                    buffer.append(comments)
 
             buffer_dict[_opcode_offset] = buffer
-            # print_data.append('\t'.join(buffer))
 
-        # return print_data
         return buffer_dict
 
-    def output_data(self):
+    def output_data(self) -> str:
+        self.get_global_var_name()  # 全局变量名字
+        self.get_func_name()        # 带名字函数
+        self.get_constructor()      # 构造函数
+        self.asm_decompiler()       # 字节码区反编译
         out_buffer = []
-        self.get_global_var_name()
+        # global vars
         out_buffer.extend(self._global_vars)
+        # constor
         constructor_name = self._get_string(self._index_class.to_bytes(4, byteorder=self._byteorder))
         out_buffer.append(f'\n{constructor_name}::{constructor_name}:')
         for values in self._construct_lines.values():
             out_buffer.append('  '.join(values))
+        # assemble
         for key, values in self._asm_lines.items():
             jump_mark_str = self._asm_jmp_mark.get(key, None)
             if jump_mark_str:
                 out_buffer.append(jump_mark_str)
-            if self._debug_mode:
-                space_length = 16 - 4 - len(values[1])
-                space_placeholder = ' ' * space_length
-                if len(values) == 3:
-                    out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}')
-                else:
-                    out_buffer.append('  '.join(values))
+            if not self._debug_mode:
+                values[0] = ''
+            space_length = 16 - 4 - len(values[1])
+            space_placeholder = ' ' * space_length
+            if len(values) == 3:
+                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}')
+            elif len(values) > 3:
+                comment_str = '  '.join(values[2:])
+                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]} // {comment_str}')
             else:
-                space_length = 16 - 4 - len(values[0])
-                space_placeholder = ' ' * space_length
-                if len(values) == 2:
-                    out_buffer.append(f'  {values[0]}{space_placeholder}{values[1]}')
-                else:
-                    out_buffer.append('  '.join(values))
+                out_buffer.append('  '.join(values))
+
+
         return '\n'.join(out_buffer)
 
     def get_all_str(self):
@@ -191,13 +197,6 @@ class BvmData:
             utf16_byte = b''
         return str_list
 
-    ''' 
-    大/小端处理
-    读取4字节的地址信息
-    读取1/2/4的数据 (并转换)
-    while方式读取string
-    '''
-
     def _convert_operand(self, bytes_:bytes, bytes_length:int) -> str:
         '''
         signed int or
@@ -218,7 +217,7 @@ class BvmData:
         end_bytes = b'\x00\x00'
         str_buffer = []
         utf16_byte = b''
-        offset = int.from_bytes(offset, byteorder=self._byteorder)
+        offset = self._get_int(offset)
 
         if index:
             _data = self.data[index:]
@@ -238,26 +237,32 @@ class BvmData:
 
     def _get_offset(self, offset_name: str) -> int:
         offset = offset_list.get(offset_name)
-        return int.from_bytes(self.data[offset:offset+4], byteorder=self._byteorder, signed=False) 
+        return self._get_int(self.data[offset:offset+4]) 
 
     def _get_content(self, offset1: int, offset2: int) -> bytes:
         data = self.data[offset1:offset2]
         return data
 
+    def _get_int(self, byte_:bytes, signed_=False) -> int:
+        return int.from_bytes(byte_, byteorder=self._byteorder, signed=signed_)
+
 if __name__ == "__main__":
     import os, sys
     if len(sys.argv) == 1:
-        path = r"d:\arena\EARTH DEFENSE FORCE 5\r\MISSION\M003\MISSION.BVM"
-        file_path = path
-        # print('Must import BVM file!')
-        # sys.exit()
+        # path = r"d:\arena\EARTH DEFENSE FORCE 5\r\MISSION\M003\MISSION.BVM"
+        # file_path = path
+        print('BVM file required!')
+        sys.exit()
     else:
         file_path = sys.argv[1]
-    if '.bvm' == os.path.splitext(file_path)[1].lower():
-        print('oik')
+    _sp = os.path.splitext(file_path)
+    if len(sys.argv) == 3:
+        output_path = sys.argv[2]
+    else:
+        output_path = f'{_sp[0]}.asm'
+    if '.bvm' == _sp[1].lower():
+        print('working...')
         bvm_ = BvmData(file_path)
-        bvm_.get_func_name()
-        bvm_.get_constructor()
-        bvm_.asm_decompiler()
-        with open('r:/bvmoutput.asm', 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(bvm_.output_data())
+        print('done!')
