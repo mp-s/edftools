@@ -1,6 +1,5 @@
 import struct
 
-import float_hex
 from bvm_model import *
 
 
@@ -19,6 +18,7 @@ class BvmData:
             self._byteorder = 'big'
             self._encoding = 'utf-16be'
         self._read_header()
+        self._global_vars = {}
         self._asm_jmp_mark = {}
         self._construct_lines = {}
         self._asm_lines = {}
@@ -38,12 +38,12 @@ class BvmData:
         size = self._count_ptr_list * 4
         offset2 = self._index_ptr_list + size
         ptr_data = self._get_content(self._index_ptr_list, offset2)
-        self._global_vars = []
         assert len(ptr_data) == size
         ptr_list = [ptr_data[i:i+4] for i in range(0, size, 4)]
         for index, str_index in enumerate(ptr_list):
             str_ = self._get_string(str_index)
-            self._global_vars.append(f'name {str_} // {hex(index)[2:]}')
+            # self._global_vars.append(f'name {str_} // {index}')
+            self._global_vars[index] = str_
     
     def get_func_name(self):
         size = self._count_ptr2_list * 0x10
@@ -69,7 +69,7 @@ class BvmData:
                         arg_type = arg_type.to_bytes(1, self._byteorder)
                         types_name.append(func_arg_types.get(arg_type))
                 type_str = ', '.join(types_name)
-                return_string = f'\n{func_name}:  // {func_name}({type_str})'
+                return_string = f'\n{func_name}:   /- {func_name}({type_str})'
                 pass # 有传参 有类型 后续处理
             else:
                 class_name_ = self._get_string(arg_index)
@@ -94,6 +94,11 @@ class BvmData:
         operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
         # self._asm_lines = {}
 
+# bugs: edf5\m003
+#       bytecode: 9a d0 01
+#       asm: pushstr 1d0
+#       position-> b'\x00\x00'
+#       wtf? 
 
         while(offset < len(chunk)):
             opcode = chunk[offset:offset+1]
@@ -103,13 +108,19 @@ class BvmData:
             opcode_asm, operand_len = asm_opcode.get(opcode, ukn_opcode)
             buffer = [opcode.hex(), opcode_asm]
 
-            # operand_len == 0
-            if opcode_asm == 'pushstr' and operand_len == 0:    # "pushstr 0"
-                buffer.append(self._get_string(self._index_str.to_bytes(4, byteorder=self._byteorder, signed=False)))
-            elif opcode == b'\x15':
-                buffer.append('0')
-            elif opcode == b'\x33':
-                buffer.append('1')
+            if operand_len == 0:
+                if opcode_asm == 'pushstr':    # "pushstr 0"
+                    _ = self._get_string(bytes(0), self._index_str)
+                    buffer.append(f'"{_}"')
+                elif opcode == b'\x15' or 'rel' in opcode_asm:
+                    buffer.append('0')
+                elif opcode == b'\x33':
+                    buffer.append('1')
+                elif 'abs' in opcode_asm:   # "**abs 0"
+                    buffer.append('0')
+                    buffer.append(self._global_vars.get(0))
+                else:
+                    pass
             else:
                 pass
 
@@ -122,7 +133,7 @@ class BvmData:
                 elif opcode_asm == 'push':  # all numbers
                     operand_str = self._convert_operand(operand, operand_len)
                 elif opcode_asm == 'pushstr':   # all bytes offset
-                    operand_str = self._get_string(operand, self._index_str)
+                    operand_str = f'\"{self._get_string(operand, self._index_str)}\"'
                 elif opcode_asm in operands_use_int:    # all int
                     operand_str = str(self._get_int(operand))
                     # 添加注释
@@ -132,8 +143,14 @@ class BvmData:
                     mark_offset = _opcode_offset + operand_int
                     operand_str = f'location_{mark_offset}'
                     self._asm_jmp_mark[mark_offset] = f'\n{operand_str} :'
+                elif 'abs' in opcode_asm:
+                    # 全局变量存放点
+                    operand_int = self._get_int(operand)
+                    operand_str = str(operand_int)
+                    comments = self._global_vars.get(operand_int)
                 else:
-                    operand_str = operand.hex() if self._byteorder == 'big' else operand[::-1].hex()
+                    _ = operand.hex() if self._byteorder == 'big' else operand[::-1].hex()
+                    operand_str = f'0x{_}'
                 
                 offset += operand_len
                 buffer.append(operand_str)
@@ -151,12 +168,21 @@ class BvmData:
         self.asm_decompiler()       # 字节码区反编译
         out_buffer = []
         # global vars
-        out_buffer.extend(self._global_vars)
+        for index, var_name in self._global_vars.items():
+            out_buffer.append(f'name {var_name}    // {index}')
+        # out_buffer.extend(self._global_vars)
         # constor
         constructor_name = self._get_string(self._index_class.to_bytes(4, byteorder=self._byteorder))
         out_buffer.append(f'\n{constructor_name}::{constructor_name}:')
         for values in self._construct_lines.values():
-            out_buffer.append('  '.join(values))
+            if not self._debug_mode:
+                values[0] = ''
+            if len(values) == 3:
+                out_buffer.append('  '.join(values))
+            else:
+                left_str = '  '.join(values[0:3])
+                comment_str = '  '.join(values[3:])
+                out_buffer.append(f'{left_str}    // {comment_str}')
         # assemble
         for key, values in self._asm_lines.items():
             jump_mark_str = self._asm_jmp_mark.get(key, None)
@@ -168,9 +194,11 @@ class BvmData:
             space_placeholder = ' ' * space_length
             if len(values) == 3:
                 out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}')
-            elif len(values) > 3:
-                comment_str = '  '.join(values[2:])
-                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]} // {comment_str}')
+            elif len(values) == 4:
+                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {values[3]}')
+            elif len(values) > 4:
+                comment_str = '  '.join(values[3:])
+                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {comment_str}')
             else:
                 out_buffer.append('  '.join(values))
 
@@ -178,8 +206,8 @@ class BvmData:
         return '\n'.join(out_buffer)
 
     def get_all_str(self):
-        index = self.get_offset('string_chunk_index')
-        size = self.get_offset('class_name_index')
+        index = self._get_offset('string_chunk_index')
+        size = self._get_offset('class_name_index')
         end_bytes = b'\x00\x00'
         str_buffer = []
         str_list = []
@@ -211,7 +239,11 @@ class BvmData:
             2: '>h',
             4: '>f',
         }
-        return str(struct.unpack(enum_length.get(bytes_length), bytes_)[0])
+        unpack_type = enum_length.get(bytes_length)
+        str_ = str(struct.unpack(unpack_type, bytes_)[0])
+        if bytes_length == 4:
+            str_ = f'{str_}f'
+        return str_
 
     def _get_string(self, offset: bytes, index: int = 0) -> str:
         end_bytes = b'\x00\x00'

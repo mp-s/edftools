@@ -17,49 +17,57 @@ asm_opcode = {
     b'\x02': ('pop', 0),
     b'\x03': ('pushtop', 0),
 
-    b'\x04': ('add', 1),  # 04 00 word opcode
+    # 双pop
+    b'\x04': ('add', 1),  # 04 00
     b'\x05': ('sub', 1),
     b'\x06': ('mult', 1),
     b'\x07': ('div', 1),
+    # 双pop 无float
     b'\x08': ('mod', 1),
+    # 单pop
     b'\x09': ('neg', 1),  # 09 00
     b'\x0a': ('inc', 1),
     b'\x0b': ('dec', 1),
 
-    # 新加
-    b'\x0c': ('sar', 0),
-    b'\x0d': ('sll', 0),
-    b'\x0e': ('and', 0),
-    b'\x0f': ('or', 0),
-    b'\x10': ('xor', 0),
-    b'\x11': ('not', 0),
+    # 双pop
+    b'\x0c': ('sar', 0),    # >>
+    b'\x0d': ('sll', 0),    # <<
+    b'\x0e': ('and', 0),    # &
+    b'\x0f': ('or', 0),     # |
+    b'\x10': ('xor', 0),    # ^
+    # 单pop
+    b'\x11': ('not', 0),    # 取反
+    # float与int 转换
     b'\x12': ('ftoi', 0),
     b'\x13': ('itof', 0),
-
+    # 全局变量
     b'\x14': ('loadabs', 0), b'\x54': ('loadabs', 1),
     # next at 33
     b'\x15': ('push', 0), b'\x55': ('push', 1), b'\x95': ('push', 2), b'\xd5': ('push', 4),
+    # 全局变量
     b'\x16': ('storeabs', 0), b'\x56': ('storeabs', 1),
+    # script-stack
     b'\x17': ('loadrel', 0), b'\x57': ('loadrel', 1),
     b'\x18': ('pushrel', 0), b'\x58': ('pushrel', 1), b'\x98': ('pushrel', 2),
     b'\x19': ('storerel', 0), b'\x59': ('storerel', 1),
-
+    # 推字符串地址
     b'\x1a': ('pushstr', 0), b'\x5a': ('pushstr', 1), b'\x9a': ('pushstr', 2),
+    # script-stack
     b'\x1b': ('addrel', 0), b'\x5b': ('addrel', 1), b'\x9b': ('addrel', 2),
     b'\x1c': ('subrel', 0), b'\x5c': ('subrel', 1),
 
-    b'\x1d': ('test2z', 1),
-    b'\x1e': ('test2nz', 1),
-    b'\x1f': ('testz', 1),  # 1f 00
-    b'\x20': ('testg', 1),
-    b'\x21': ('testge', 1),
-    b'\x22': ('teste', 1),
-    b'\x23': ('testne', 1),
-    b'\x24': ('testle', 1),
-    b'\x25': ('testl', 1),
-    b'\x26': ('jmpf', 0), b'\x66': ('jmpf', 1), b'\xa6': ('jmpf', 2), b'\xe6': ('jmpf', 4),
-    b'\x27': ('jmpt', 0), b'\x67': ('jmpt', 1), b'\xa7': ('jmpt', 2),
-    b'\x28': ('jmp', 0), b'\x68': ('jmp', 1), b'\xa8': ('jmp', 2),
+    b'\x1d': ('test2z', 1),     # A!=0 and B!=0, push 1 else 0
+    b'\x1e': ('test2nz', 1),    # A!=0 or B!=0, push1 else 0
+    b'\x1f': ('testz', 1),      # push !B
+    b'\x20': ('testg', 1),      # A < B push 1 else 0
+    b'\x21': ('testge', 1),     # A <= B push 1 else 0
+    b'\x22': ('teste', 1),      # A == B push 1 else 0
+    b'\x23': ('testne', 1),     # A != B push 1 else 0
+    b'\x24': ('testle', 1),     # A > B push 1 else 0
+    b'\x25': ('testl', 1),      # A >= B push 1 elsel 0
+    b'\x26': ('jmpf', 0), b'\x66': ('jmpf', 1), b'\xa6': ('jmpf', 2), b'\xe6': ('jmpf', 4),     # pop A, A == 0, jmp
+    b'\x27': ('jmpt', 0), b'\x67': ('jmpt', 1), b'\xa7': ('jmpt', 2),                           # pop A, A != 0, jmp
+    b'\x28': ('jmp', 0), b'\x68': ('jmp', 1), b'\xa8': ('jmp', 2), b'\xe8': ('jmp', 4),
     b'\x29': ('call', 0), b'\x69': ('call', 1), b'\xa9': ('call', 2), b'\xe9': ('call', 4),
     b'\x2a': ('ret', 0),
 
@@ -76,8 +84,8 @@ asm_opcode = {
     b'\x32': ('printstr', 0),
 
     b'\x33': ('push', 0), # push 1, before with 15
-    b'\x34': ('jmpne', 0), b'\x74': ('jmpne', 1), b'\xb4': ('jmpne', 2),
-    b'\x35': ('jmpe', 0), b'\x75': ('jmpe', 1), b'\xb5': ('jmpe', 2),
+    b'\x34': ('jmpne', 0), b'\x74': ('jmpne', 1), b'\xb4': ('jmpne', 2),    # pop B,pop A, if A != B, jmp
+    b'\x35': ('jmpe', 0), b'\x75': ('jmpe', 1), b'\xb5': ('jmpe', 2),       # pop B,pop A, if A == B, jmp
 
     b'\x36': ('store', 0),
 
@@ -89,6 +97,7 @@ func_arg_types = {
     b'\x03': 'string',
 }
 
+
 call_func_types = {
     '1': 'Pop()',
     '2': 'void RegisterEvent(function_name, ?, multiple_functions_per_event(?));',
@@ -99,6 +108,7 @@ call_func_types = {
 
     '44': 'void SoundController::PlayBgm(soundname);',
     "100": "SetMap(",
+    "105": "MapObjectDestroy4(",
     '140': 'Factor_AllEnemyDestroy(',
     '200': 'Wait(',
     '300': 'PlayBGM(',
