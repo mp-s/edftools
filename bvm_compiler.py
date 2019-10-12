@@ -32,7 +32,7 @@ class BVMGenerate(object):
         # self._trimed_data = None
         self._debug_flag = debug_flag
         self._named_fn_accept_num = {}
-
+        self._named_fn_arg_types_dict = {}
 
     def _trim_comments(self, _data: list) -> list:
         ''' 去除所有注释部分, 有名函数传参注释记录 '''
@@ -49,8 +49,9 @@ class BVMGenerate(object):
                 func_arg_o_str = func_arg.split('(')[1]         # 'float, float, int, float)'
                 func_arg_list = func_arg_o_str[:-1].split(',')  # ['float', ' float', ' int', ' float']
                 func_args_num = 0 if '' == func_arg_list[0] else len(func_arg_list)              # 4
-                self._named_fn_accept_num[func_line[:-1]] = func_args_num
-                func_args_type_bytes = [
+                _trimed_fn_name = func_line[:-1]
+                self._named_fn_accept_num[_trimed_fn_name] = func_args_num
+                self._named_fn_arg_types_dict[_trimed_fn_name] = [
                     mdl.func_arg_type_byte.get(_.strip())
                     for _ in func_arg_list
                 ]                                               # [b'\x02', b'\x02', b'\x01', b'\x02']
@@ -238,19 +239,83 @@ class BVMGenerate(object):
 
     def _compile_bytecode(self):
         ''' 全部转成bytecode 并打包 '''
-        def _c_bcode(line:list):
-            _.get(list[0])
+        def _c_bcode(line:str):
+            _ = line.split()    # 不小心打平为str了 还是保留list吧
+            if len(line) == 1:
+                mdl.compiler_bytecode(_[0])
             pass
 
     def _compile_named_func(self):
         # 0x00 ~ 0x04
+        self._named_fn_bytecode_positions = {}   # 块1表
+        for k,v in self._jump_mark_table.items():   # remove 'location_xxx' mark
+            if 'location' not in k:
+                self._named_fn_bytecode_positions[k] = v
 
-        # # 0x04 ~ 0x08   fn name     absolute pos
+        self._named_fn_name_str_positions = {}   # 块2表
 
-        # 0x08 ~ 0x0c   classname or arg_type_pos   absolute pos
+        name_str_pos_in_bytes = 0
+        name_bytes_list = []
+        
+        _named_fn_block3_data = {}
+        _named_fn_block4 = self._named_fn_accept_num    # 块4表
+        # block3_pos_in_bytes = 0
+        for k in self._named_fn_bytecode_positions.keys():
+            _str_group = k.split('::')
+            if len(_str_group) == 1:
+                current_fn_name = k
+                _named_fn_block3_data[k] = self._named_fn_arg_types_dict.get(k)
+            elif len(_str_group) == 2 and self._class_name == _str_group[0]:    # Mission::Main
+                current_fn_name = _str_group[1]
+                _named_fn_block3_data[k] = self._class_name
+            else:
+                continue
+            self._named_fn_name_str_positions[k] = name_str_pos_in_bytes
+            byte_ = current_fn_name.encode(encoding='utf-16le') + bytes(2)
+            name_bytes_list.append(byte_)
+            name_str_pos_in_bytes += len(byte_)
         print()
-        # 0x0c ~ 0x10
+        self._string_table2 = b''.join(name_bytes_list)
 
+        self._named_fn_block3_positions = {}     # 块3表
+        block3_pos_in_bytes = 0
+        block3_cls_name_pos_flag = 0
+        _block3_list = []
+        for k,v in _named_fn_block3_data.items():
+            if v == [None]:
+                continue
+            elif type(v) == list:
+                self._named_fn_block3_positions[k] = block3_pos_in_bytes
+                byte_ = b''.join(v)
+
+                block3_pos_in_bytes += len(byte_)
+                _block3_list.append(byte_)
+            elif v == self._class_name:
+                byte_ = v.encode(encoding='utf-16le') + bytes(2)
+                if byte_ in _block3_list:
+                    self._named_fn_block3_positions[k] = block3_cls_name_pos_flag
+                else:
+                    self._named_fn_block3_positions[k] = block3_pos_in_bytes
+                    block3_cls_name_pos_flag = block3_pos_in_bytes
+
+                    block3_pos_in_bytes += len(byte_)
+                    _block3_list.append(byte_)
+            else:
+                pass
+        self._fn_arg_bytes = b''.join(_block3_list)
+        print()
+        # func_name_chunk_list = []
+        # for k, v in _named_fn_bytecode_positions.items():
+        #     #  构建0x10数据
+        #     _1 = v.to_bytes(4, byteorder='little')
+        #     name_str_pos = _named_fn_name_str_positions.get(k, 0)
+        #     _2 = name_str_pos.to_bytes(4, byteorder='little')
+        #     arg_pos = _named_fn_block3_positions.get(k, 0)
+        #     _3 = arg_pos.to_bytes(4, byteorder='little')
+        #     _num = _named_fn_block4.get(k, 0)
+        #     _4 = _num.to_bytes(4, byteorder='little')
+        #     func_name_chunk_list.append(_1 + _2 + _3 + _4)
+        # return b''.join(func_name_chunk_list)
 
     def read(self, file_path):
         with open(file=file_path, mode='r', encoding='utf-8') as f:
