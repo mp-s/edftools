@@ -100,7 +100,6 @@ class BVMGenerate(object):
                 flag_constructor = False
                 bytecode_head = index + 1
                 self._asm_data = self._trimed_data[index+1:]
-                # return self._asm_data
                 return b''.join(_global_var_list)
                 break
 
@@ -139,31 +138,31 @@ class BVMGenerate(object):
         operands_use_uint = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 
                             'cuscall3', 'loadabs', 'storeabs'] # unsigned int
         # operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
-        def _c_operand(line):
+        def _c_operand(line:str):
             _group = line.split()
             if len(_group) == 2:    # 'location_xxx  :' glitch
                 _opcode, _operand = _group
             else:   # no operand
-                return line
+                return [line.strip()]
 
             if 'pushstr' == _opcode:   # pushstr     "some_string"
                 _str = _operand.strip('"')
                 _str_pos = self._str_pos_table.get(_str)  # int
                 length = 4 if _str_pos >> 16 else (2 if _str_pos >> 8 else 1)
                 _compiled_byte = _str_pos.to_bytes(length, byteorder='little')
-                return f'{_opcode} {_compiled_byte}'    # pushstr     (int)    --(0xHHHHHHHH)--
+                return [_opcode, _compiled_byte]    # pushstr     (int)    --(0xHHHHHHHH)--
 
             elif _operand[0:2].lower() == '0x': # 0xhh
                 _hex_str = _operand[2:]
                 if len(_hex_str) & 0x1 != 0:
                     _hex_str = f'0{_hex_str}'   # 定长
                 _compiled_byte = bytes.fromhex(_hex_str)[::-1]
-                return f'{_opcode} {_compiled_byte}'
+                return [_opcode, _compiled_byte]
 
             elif _opcode == 'push' and _operand[-1] == 'f':
                 float_ = float(_operand[:-1])
                 _compiled_byte = struct.pack('<f', float_)
-                return f'{_opcode} {_compiled_byte}'
+                return [_opcode, _compiled_byte]
 
             elif _opcode == 'push':
                 int_ = int(_operand)
@@ -173,16 +172,16 @@ class BVMGenerate(object):
                 else:
                     length = 2
                 _compiled_byte = int_.to_bytes(length, byteorder='little', signed=True)
-                return f'{_opcode} {_compiled_byte}'
+                return [_opcode, _compiled_byte]
 
             elif _opcode in operands_use_uint:
                 int_ = int(_operand)
                 length = 4 if int_ >> 16 else (2 if int_ >> 8 else 1)
                 _compiled_byte = int_.to_bytes(length, byteorder='little')   # 不定长
-                return f'{_opcode} {_compiled_byte}'
+                return [_opcode, _compiled_byte]
 
             else:
-                return line
+                return [line]
 
         self._asm_data = list(map(_c_operand, self._asm_data))
 
@@ -202,24 +201,25 @@ class BVMGenerate(object):
         jump_mark_flag = False
         jump_mark_name = None
         asm_pos_table = {}
-        for line in self._asm_data:
-            if '' == line:
+        for list_ in self._asm_data:
+            if '' == list_[0]:
                 continue
-            if line[-1] == ':':
+            if list_[0][-1] == ':':
                 jump_mark_flag = True
-                jump_mark_name = line[:-1].strip()
+                jump_mark_name = list_[0][:-1].strip()
                 # jump_mark_table[current_compiled_pos] = line[:-1].strip()
             else:
-                _group = line.split()
-                code_asm = _group[0]
-                if code_asm == 'jmp':
+                _group = list_
+                code_asm = _group[0].split()
+                if 'jmp' in _group[0] or 'call' == code_asm[0]:
                     length_current_line = 3
+                    list_ = list_[0].split()
                 elif len(_group) == 1:
                     length_current_line = 1
                 else:
                     length_opr = len(_group[1])
                     length_current_line = 1 + length_opr
-                asm_pos_table[current_compiled_pos] = line
+                asm_pos_table[current_compiled_pos] = list_
                 if jump_mark_flag:
                     self._jump_mark_table[jump_mark_name] = current_compiled_pos
                     jump_mark_name = None
@@ -227,23 +227,24 @@ class BVMGenerate(object):
                 current_compiled_pos += length_current_line
         
         for key, item in asm_pos_table.copy().items():
-            _group = item.split()
+            _group = item
             opcode = _group[0] 
             if 'jmp' in opcode or 'call' == opcode:
                 loc_str = _group[1]
                 mark_pos = self._jump_mark_table.get(loc_str, None)
                 relative_pos = mark_pos - key
                 _compiled_operand = relative_pos.to_bytes(2, byteorder='little', signed=True)
-                asm_pos_table[key] = f'{opcode} {_compiled_operand}'
+                asm_pos_table[key] = [opcode, _compiled_operand]
         self._asm_data = list(asm_pos_table.values())
 
     def _compile_bytecode(self):
         ''' 全部转成bytecode 并打包 '''
-        def _c_bcode(line:str):
-            _ = line.split()    # 不小心打平为str了 还是保留list吧
-            if len(line) == 1:
-                mdl.compiler_bytecode(_[0])
-            pass
+        def _c_bcode(list_:list):
+            if len(list_) == 1:
+                return mdl.compiler_bytecode(list_[0])
+            else:
+                return mdl.compiler_bytecode(list_[0], list_[1])
+        self._asm_data = list(map(_c_bcode, self._asm_data))
 
     def _compile_named_func(self):
         # 0x00 ~ 0x04
@@ -358,8 +359,8 @@ class BVMGenerate(object):
 
     def debug_file(self, file_path = None):
         # print(self._asm_data)
-        with open('q:\debug.asm', 'w', encoding='utf-8') as f:
-            f.write('\n'.join(self._asm_data))
+        with open('q:\debug.asm', 'wb') as f:
+            f.write(b''.join(self._asm_data))
 
     def build_file(self, file_path):
         bytes_buffer = b''
@@ -374,5 +375,6 @@ if __name__ == "__main__":
     p._compile_str()
     p._compile_operand()
     p._compile_jmp()
+    p._compile_bytecode()
     p._compile_named_func()
     p.debug_file()
