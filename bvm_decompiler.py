@@ -111,14 +111,16 @@ class BvmData:
             if operand_len == 0:
                 if opcode_asm == 'pushstr':    # "pushstr 0"
                     _ = self._get_string(bytes(0), self._index_str)
-                    buffer.append(f'"{_}"')
-                elif opcode == b'\x15' or 'rel' in opcode_asm:
+                    buffer.append(f'\"{_}\"')
+                elif opcode == b'\x15' or 'cuscall' in opcode_asm:
                     buffer.append('0')
                 elif opcode == b'\x33':
                     buffer.append('1')
                 elif 'abs' in opcode_asm:   # "**abs 0"
                     buffer.append('0')
                     buffer.append(self._global_vars.get(0))
+                elif  'rel' in opcode_asm:
+                    buffer.append('0x00')
                 else:
                     pass
             else:
