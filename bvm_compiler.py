@@ -1,5 +1,6 @@
 import os
 import struct
+import bvm_model as mdl
 '''
     构造header
     构造全局变量名称表
@@ -13,11 +14,7 @@ import struct
     最后的四字节补全
     最后的16字节补全
 '''
-func_arg_type_byte = {
-    'int': b'\x01',
-    'float': b'\x02',
-    'string': b'\x03',
-}
+
 
 class BVMGenerate(object):
     '''
@@ -31,36 +28,52 @@ class BVMGenerate(object):
         写入字节码
         完成整个文件-->>>
     '''
-    def __init__(self):
-        self._trimed_data = None
+    def __init__(self, debug_flag: bool = False):
+        # self._trimed_data = None
+        self._debug_flag = debug_flag
+        self._named_fn_accept_num = {}
 
 
     def _trim_comments(self, _data: list) -> list:
-
+        ''' 去除所有注释部分, 有名函数传参注释记录 '''
         def trim_line_comment (line):
             if '//' in line:
                 # 非函数传参部分的注释清洗 //
                 return line.split('//')[0].rstrip()
             elif '/-' in line:
                 # 带函数传参注释提取传参部分 /-
-                func_name, func_arg = line.split('/-')
-                func_name = func_name.strip()[:-1]
-                func_arg_data = func_arg.split('(')[1][:-1].split(',')
-                func_args_num = len(func_arg_data)
-                func_args_bytes = [
-                    func_arg_type_byte.get(_.strip())
-                    for _ in func_arg_data
-                ]
-                return func_name
+                # SceneEffect_Snow:   /- SceneEffect_Snow(float, float, int, float)
+                func_line, func_arg = line.split('/-')          # ['SceneEffect_Snow:   ', ' SceneEffect_Snow(float, float, int, float)']
+                func_line = func_line.strip()                   # 'SceneEffect_Snow:'
+                func_arg = func_arg.strip()                     # 'SceneEffect_Snow(float, float, int, float)'
+                func_arg_o_str = func_arg.split('(')[1]         # 'float, float, int, float)'
+                func_arg_list = func_arg_o_str[:-1].split(',')  # ['float', ' float', ' int', ' float']
+                func_args_num = 0 if '' == func_arg_list[0] else len(func_arg_list)              # 4
+                self._named_fn_accept_num[func_line[:-1]] = func_args_num
+                func_args_type_bytes = [
+                    mdl.func_arg_type_byte.get(_.strip())
+                    for _ in func_arg_list
+                ]                                               # [b'\x02', b'\x02', b'\x01', b'\x02']
+                return func_line
             else:
                 return line.rstrip()
-        return list(map(trim_line_comment, _data))
-        
+        _trimed_data = list(map(trim_line_comment, _data))
+        line_offset = 0
+        # triming file header empty line
+        for index, line in enumerate(_trimed_data):
+            if line.strip():
+                line_offset = index
+                break
+        return _trimed_data[line_offset:]
+
 
     def _compile_global_variables(self) -> list:
+        ''' 编译全局变量, 初始化变量的编译 '''
         flag_global_vars = True
         flag_constructor = False
-        global_var_list = [] # 纯名字 还需要生成一个地址表, 匹配打平后的数据
+        _global_var_list = [] # 纯名字 还需要生成一个地址表, 匹配打平后的数据
+        self._gbl_var_rel_pos_list = []
+        _gbl_var_rel_pos = 0
 
         # define global var, assign value
         for index, line in enumerate(self._trimed_data):
@@ -69,78 +82,75 @@ class BVMGenerate(object):
                     flag_global_vars = False
                 else:
                     global_var_name = line.split(' ')[-1]
-                    global_var_list.append(global_var_name)
+                    global_var_byte = global_var_name.encode(encoding='utf-16le') +\
+                                        bytes(2)
+                    _global_var_list.append(global_var_byte)
+                    self._gbl_var_rel_pos_list.append(_gbl_var_rel_pos)
+                    _gbl_var_rel_pos += len(global_var_byte)
                     continue
             elif flag_constructor:
                 pass # compile bytecode
 
             if '::' in line:
-                class_name, func_name = line[:-1].split('::')
-                if class_name in func_name: # Mission::Mission:
+                self._class_name, func_name = line[:-1].split('::')
+                if self._class_name in func_name: # Mission::Mission:
                     flag_constructor = True
-            elif 'exit' in line:
+            elif 'exit' in line:    # first exit break
                 flag_constructor = False
                 bytecode_head = index + 1
                 self._asm_data = self._trimed_data[index+1:]
-                return self._asm_data
+                # return self._asm_data
+                return b''.join(_global_var_list)
                 break
 
-    '''
-        Mission::Mission:
-        push  0
-        storeabs  0
-        push  1
-        neg  00
-        storeabs  30
-        exit
-    '''
 
     '''
         bytecode编译步骤:
         1. 字符串提取 转换成位置    done
-        2. int, float提取
-        3. hex提取
-        4. jmp点提取 转换为位置 ****
+        2. int, float提取           done
+        3. hex提取                  done
+        4. jmp点提取 转换为位置     done
     '''
     def _compile_str(self) -> bytes:
+        ''' 提取字符串 合块 获得位置 应用入代码区 '''
         str_list = []
-        str_pos_table = {}
-        for line in self._trimed_data:
+        for line in self._asm_data:
             if 'pushstr' in line:
                 line_group = line.split()
                 str_ = line_group[-1].strip('\"')
-                str_list.append(str_)
+                if str_ not in str_list:
+                    str_list.append(str_)
 
-        bytes_str_tbl_1 = []
+        bytes_str_tbl_1 = []    # generate string bytes
         current_str_offest = 0
+        self._str_pos_table = {}
         for str_ in str_list:
-            str_pos_table[str_] = current_str_offest
+            self._str_pos_table[str_] = current_str_offest
             _compiled_byte = str_.encode(encoding='utf-16le') + bytes(2)
             current_str_offest += len(_compiled_byte)   # next str position
             bytes_str_tbl_1.append(_compiled_byte)
 
         return b''.join(bytes_str_tbl_1)
 
+
+    def _compile_operand(self):
+        ''' 编译操作数为 bytes, 为下一步编译jmp获取长度用'''
         operands_use_uint = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 
                             'cuscall3', 'loadabs', 'storeabs'] # unsigned int
+        # operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
         def _c_operand(line):
             _group = line.split()
             if len(_group) == 2:    # 'location_xxx  :' glitch
                 _opcode, _operand = _group
             else:   # no operand
                 return line
-                _operand = None
-            
-            if 'location' in line and ':' in line:  # location_xxx :
-                return line
 
-            elif ':' in line[-1]:   # w/o "location" func name
-                return line
-
-            elif 'pushstr' == _opcode:   # pushstr     "some_string"
+            if 'pushstr' == _opcode:   # pushstr     "some_string"
                 _str = _operand.strip('"')
-                _str_pos = str_pos_table.get(_str)  # int
-                return f'{_opcode} {_str_pos}'    # pushstr     (int)    --(0xHHHHHHHH)--
+                _str_pos = self._str_pos_table.get(_str)  # int
+                length = 4 if _str_pos >> 16 else (2 if _str_pos >> 8 else 1)
+                _compiled_byte = _str_pos.to_bytes(length, byteorder='little')
+                return f'{_opcode} {_compiled_byte}'    # pushstr     (int)    --(0xHHHHHHHH)--
 
             elif _operand[0:2].lower() == '0x': # 0xhh
                 _hex_str = _operand[2:]
@@ -152,7 +162,7 @@ class BVMGenerate(object):
             elif _opcode == 'push' and _operand[-1] == 'f':
                 float_ = float(_operand[:-1])
                 _compiled_byte = struct.pack('<f', float_)
-                pass
+                return f'{_opcode} {_compiled_byte}'
 
             elif _opcode == 'push':
                 int_ = int(_operand)
@@ -169,48 +179,16 @@ class BVMGenerate(object):
                 length = 4 if int_ >> 16 else (2 if int_ >> 8 else 1)
                 _compiled_byte = int_.to_bytes(length, byteorder='little')   # 不定长
                 return f'{_opcode} {_compiled_byte}'
+
             else:
                 return line
 
-        self._trimed_data = list(map(_c_operand, self._trimed_data))
+        self._asm_data = list(map(_c_operand, self._asm_data))
 
 
-    operands_use_uint = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3'] # unsigned int
-    operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
-    def _compile_numbers(self):
-        def _c_numbers(line:str):
-            # 1 == 0x01
-            if 'location' in line and ':' in line:  # location_xxx :
-                return line
-            elif ':' in line:
-                return line
-            else:
-                _group = line.split()
-                if len(_group) > 1:
-                    if not (('pushstr' in line) or (_group[0] in self.operands_use_offset)):
-                        number_str = _group[1]   # 数据操作
-                        if number_str[-1] == 'f':
-                            _float = float(number_str[:-1])  # float
-                            compiled_operand = struct.pack('<f', _float)
-                            pass
-                        # elif number_str[0:2].lower() == '0x':   # 0xHHHH
-                        #     _hex_str = number_str[2:]
-                        #     compiled_operand_be = bytes.fromhex(_hex_str)
-                        #     compiled_operand = compiled_operand_be[::-1] # little endian
-                        #     pass
-                        else:
-                            _int = int(number_str)
-                            compiled_operand = _int.to_bytes(byteorder='little')    # to_bytes need length
-                            pass
-                return _group[0], compiled_operand
-        self._trimed_data = list(map(_c_numbers, self._trimed_data))
-
-    def _compile_bytecode(self):
-        def _c_bcode(line:list):
-            _.get(list[0])
-            pass
 
     def _compile_jmp(self):
+        ''' 编译jmp与call语句跳转为相对位置, 再转 bytes '''
         '''
             计算每行所需大小
             累计大小信息-> 当前行位置
@@ -218,14 +196,61 @@ class BVMGenerate(object):
             jmp语句位置与跳转点位置计算 出A
             jmp语句加入A
         '''
-        def _c_jmp(line:str):
-            if 'jmp' in line:
-                pass
-            elif ':' == line[-1]:
-                pass
+        current_compiled_pos = 0
+        self._jump_mark_table = {}
+        jump_mark_flag = False
+        jump_mark_name = None
+        asm_pos_table = {}
+        for line in self._asm_data:
+            if '' == line:
+                continue
+            if line[-1] == ':':
+                jump_mark_flag = True
+                jump_mark_name = line[:-1].strip()
+                # jump_mark_table[current_compiled_pos] = line[:-1].strip()
             else:
-                return line
-        pass
+                _group = line.split()
+                code_asm = _group[0]
+                if code_asm == 'jmp':
+                    length_current_line = 3
+                elif len(_group) == 1:
+                    length_current_line = 1
+                else:
+                    length_opr = len(_group[1])
+                    length_current_line = 1 + length_opr
+                asm_pos_table[current_compiled_pos] = line
+                if jump_mark_flag:
+                    self._jump_mark_table[jump_mark_name] = current_compiled_pos
+                    jump_mark_name = None
+                    jump_mark_flag = False
+                current_compiled_pos += length_current_line
+        
+        for key, item in asm_pos_table.copy().items():
+            _group = item.split()
+            opcode = _group[0] 
+            if 'jmp' in opcode or 'call' == opcode:
+                loc_str = _group[1]
+                mark_pos = self._jump_mark_table.get(loc_str, None)
+                relative_pos = mark_pos - key
+                _compiled_operand = relative_pos.to_bytes(2, byteorder='little', signed=True)
+                asm_pos_table[key] = f'{opcode} {_compiled_operand}'
+        self._asm_data = list(asm_pos_table.values())
+
+    def _compile_bytecode(self):
+        ''' 全部转成bytecode 并打包 '''
+        def _c_bcode(line:list):
+            _.get(list[0])
+            pass
+
+    def _compile_named_func(self):
+        # 0x00 ~ 0x04
+
+        # # 0x04 ~ 0x08   fn name     absolute pos
+
+        # 0x08 ~ 0x0c   classname or arg_type_pos   absolute pos
+        print()
+        # 0x0c ~ 0x10
+
 
     def read(self, file_path):
         with open(file=file_path, mode='r', encoding='utf-8') as f:
@@ -233,6 +258,7 @@ class BVMGenerate(object):
         self._trimed_data = self._trim_comments(file_data)
 
     def _generate_target(self):
+        ''' 生成整个文件 '''
         bytes_head_type = b'BVM '
         bytes_head_type2 = bytes([0x50, 0, 0, 0]) # 0x50
         bytes_head_s1 = bytes(8)
@@ -265,8 +291,23 @@ class BVMGenerate(object):
         func_args_types = {}
         class_str_bytes = {}
 
+    def debug_file(self, file_path = None):
+        # print(self._asm_data)
+        with open('q:\debug.asm', 'w', encoding='utf-8') as f:
+            f.write('\n'.join(self._asm_data))
+
     def build_file(self, file_path):
         bytes_buffer = b''
 
         with open(file=file_path, mode='wb') as f:
             f.write()
+
+if __name__ == "__main__":
+    p = BVMGenerate()
+    p.read('q:/output.asm')
+    p._compile_global_variables()
+    p._compile_str()
+    p._compile_operand()
+    p._compile_jmp()
+    p._compile_named_func()
+    p.debug_file()

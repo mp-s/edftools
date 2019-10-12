@@ -151,3 +151,101 @@ call_func_types = {
     
     '9400' : "CreateEventPlayerAreaCheck(",
 }
+
+# compiler
+func_arg_type_byte = {
+    'int': b'\x01',
+    'float': b'\x02',
+    'string': b'\x03',
+}
+
+def compiler_bytecode(opcode:str, compiled_operand:bytes = None):
+    no_opr = {
+        # 0
+        'pop': b'\x02',
+        'pushtop': b'\x03',
+        # 0,
+        'sar': b'\x0c',
+        'sll': b'\x0d',
+        'and': b'\x0e',
+        'or': b'\x0f',
+        'xor': b'\x10',
+        'not': b'\x11',
+        'ftoi': b'\x12',
+        'itof': b'\x13',
+        # 0,
+        'ret': b'\x2a',
+        # 0,
+        'exit': b'\x30',
+        # 0,
+        'store': b'\x36',
+    }
+    fixed_opr = {
+        # 1
+        'cvtstore': b'\x01',
+        # 1
+        'add': b'\x04',
+        'sub': b'\x05',
+        'mult': b'\x06',
+        'div': b'\x07',
+        'mod': b'\x08',
+        'neg': b'\x09',
+        'inc': b'\x0a',
+        'dec': b'\x0b',
+        # 1,
+        'test2z': b'\x1d',
+        'test2nz': b'\x1e',
+        'testz': b'\x1f',
+        'testg': b'\x20',
+        'testge': b'\x21',
+        'teste': b'\x22',
+        'testne': b'\x23',
+        'testle': b'\x24',
+        'testl': b'\x25',
+    }
+    dynamic_opr = {
+        # dynamic
+        'loadabs': 0x14,
+        'push': 0x15,
+        'storeabs': 0x16,
+        'loadrel': 0x17,
+        'pushrel': 0x18,
+        'storerel': 0x19,
+        'pushstr': 0x1a,
+        'addrel': 0x1b,
+        'subrel': 0x1c,
+        # dynamic,
+        'jmpf': 0x26,
+        'jmpt': 0x27,
+        'jmp': 0x28,
+        'call': 0x29,
+        # dynamic,
+        'cuscall': 0x2b,
+        'cuscall0': 0x2c,
+        'cuscall1': 0x2d,
+        'cuscall2': 0x2e,
+        'cuscall3': 0x2f,
+        # dynamic,
+        'jmpne': 0x34,
+        'jmpe': 0x35,
+    }
+
+    if opcode in no_opr:
+        compiled_bytecode = no_opr.get(no_opr)
+    elif opcode in fixed_opr and compiled_operand is not None:
+        compiled_bytecode = no_opr.get(fixed_opr)
+    elif opcode in dynamic_opr and compiled_operand is not None:
+        opr_len = len(compiled_operand)
+        if opr_len == 1:
+            _x = 0x40
+        elif opr_len == 2:
+            _x = 0x80
+        elif opr_len == 4:
+            _x = 0xC0
+        else:
+            _x = 0
+        new_bytecode = dynamic_opr.get(opcode) | _x
+        compiled_bytecode = new_bytecode.to_bytes(1, byteorder='little')
+    else:
+        return b''
+    return compiled_bytecode + compiled_operand
