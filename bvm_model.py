@@ -231,9 +231,9 @@ def compiler_bytecode(opcode:str, compiled_operand:bytes = None):
     }
 
     if opcode in no_opr:
-        compiled_bytecode = no_opr.get(no_opr)
+        compiled_bytecode = no_opr.get(opcode)
     elif opcode in fixed_opr and compiled_operand is not None:
-        compiled_bytecode = no_opr.get(fixed_opr)
+        compiled_bytecode = fixed_opr.get(opcode)
     elif opcode in dynamic_opr and compiled_operand is not None:
         opr_len = len(compiled_operand)
         if opr_len == 1:
@@ -248,4 +248,7 @@ def compiler_bytecode(opcode:str, compiled_operand:bytes = None):
         compiled_bytecode = new_bytecode.to_bytes(1, byteorder='little')
     else:
         return b''
-    return compiled_bytecode + compiled_operand
+    if compiled_operand:
+        return compiled_bytecode + compiled_operand
+    else:
+        return compiled_bytecode

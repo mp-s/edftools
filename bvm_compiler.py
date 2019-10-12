@@ -68,16 +68,25 @@ class BVMGenerate(object):
         return _trimed_data[line_offset:]
 
 
-    def _compile_global_variables(self) -> list:
+    def _compile_global_variables(self) -> bytes:
         ''' 编译全局变量, 初始化变量的编译 '''
         flag_global_vars = True
         flag_constructor = False
         _global_var_list = [] # 纯名字 还需要生成一个地址表, 匹配打平后的数据
-        self._gbl_var_rel_pos_list = []
+        self._gbl_var_rel_pos_list = [] # 地址表, 可统计长度, 可输出完成格式
+        self._constructor_bytecode_list = []
         _gbl_var_rel_pos = 0
 
         # define global var, assign value
         for index, line in enumerate(self._trimed_data):
+
+            if 'exit' in line:    # first exit break
+                flag_constructor = False
+                bytecode_head = index + 1
+                self._asm_data = self._trimed_data[index+1:]
+                return b''.join(_global_var_list)
+                break
+
             if flag_global_vars:
                 if 'name' not in line:
                     flag_global_vars = False
@@ -90,19 +99,22 @@ class BVMGenerate(object):
                     _gbl_var_rel_pos += len(global_var_byte)
                     continue
             elif flag_constructor:
-                pass # compile bytecode
+                opcode, operand = line.split()
+                if '0x' in operand:
+                    operand = bytes.fromhex(operand[2:])
+                elif opcode == 'push':
+                    operand_int = int(operand)
+                    operand = operand_int.to_bytes(1, byteorder='little', signed=True)
+                else:
+                    operand_int = int(operand)
+                    operand = operand_int.to_bytes(1, byteorder='little')
+                line_bytecode = mdl.compiler_bytecode(opcode, operand)
+                self._constructor_bytecode_list.append(line_bytecode)
 
             if '::' in line:
                 self._class_name, func_name = line[:-1].split('::')
                 if self._class_name in func_name: # Mission::Mission:
                     flag_constructor = True
-            elif 'exit' in line:    # first exit break
-                flag_constructor = False
-                bytecode_head = index + 1
-                self._asm_data = self._trimed_data[index+1:]
-                return b''.join(_global_var_list)
-                break
-
 
     '''
         bytecode编译步骤:
@@ -330,15 +342,15 @@ class BVMGenerate(object):
         bytes_head_s1 = bytes(8)
         # 0x10
         bytes_head_s2 = b'\x38\x01\x15\x01\x02\x00\x00\x00'
-        global_vars_num = None
-        global_vars_ofs = None
+        global_vars_num = len(self._gbl_var_rel_pos_list)
+        global_vars_ofs = 0x50  # default
         # 0x20
-        func_names_num = None
-        func_names_ofs = None
+        func_names_num = len(self._named_fn_bytecode_positions)
+        func_names_ofs = global_vars_ofs + (global_vars_num * 0x04)
         stack1_size = int.to_bytes(512, 4, byteorder='little')
         stack2_size = int.to_bytes(512, 4, byteorder='little')
         # 0x30
-        bytes_constructor_offset = None
+        bytes_constructor_offset = func_names_ofs + (func_names_num * 0x10)
         bytes_main_offset = None
         bytes_strtbl_offset = None
         bytes_clsname_offset = None
@@ -354,8 +366,9 @@ class BVMGenerate(object):
         bytecode_bytes = {}
         str_table1_bytes = {}
         str_table2_bytes = {}
-        func_args_types = {}
-        class_str_bytes = {}
+        str_table3_bytes = {}
+        func_args_cls_types = {}
+        # class_str_bytes = {}
 
     def debug_file(self, file_path = None):
         # print(self._asm_data)
