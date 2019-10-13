@@ -9,6 +9,7 @@ class BVMGenerate(object):
         self._debug_flag = debug_flag
         self._named_fn_accept_num = {}
         self._named_fn_arg_types_dict = {}
+        self._named_fn_ret_type_bytes = {}
 
     def _trim_comments(self, _data: list):
         ''' 去除所有注释部分, 有名函数传参注释记录 '''
@@ -18,11 +19,14 @@ class BVMGenerate(object):
                 return line.split('//')[0].rstrip()
             elif '/-' in line:
                 # 带函数传参注释提取传参部分 /-
-                # SceneEffect_Snow:   /- SceneEffect_Snow(float, float, int, float)
-                func_line, func_arg = line.split('/-')          # ['SceneEffect_Snow:   ', ' SceneEffect_Snow(float, float, int, float)']
-                func_line = func_line.strip()                   # 'SceneEffect_Snow:'
-                func_arg = func_arg.strip()                     # 'SceneEffect_Snow(float, float, int, float)'
-                func_arg_o_str = func_arg.split('(')[1]         # 'float, float, int, float)'
+                # CruiseAndRespawn:   /- int(int, string, string, float)
+                func_line, func_arg = line.split('/-')          # ['CruiseAndRespawn:   ', ' int(int, string, string, float)']
+                func_line = func_line.strip()                   # 'CruiseAndRespawn:'
+                func_arg = func_arg.strip()                     # 'int(int, string, string, float)'
+                _split_group = func_arg.split('(')
+                func_ret_type = _split_group[0]                 # 'int'
+
+                func_arg_o_str = _split_group[1]         # 'float, float, int, float)'
                 func_arg_list = func_arg_o_str[:-1].split(',')  # ['float', ' float', ' int', ' float']
                 func_args_num = 0 if '' == func_arg_list[0] else len(func_arg_list)              # 4
                 _trimed_fn_name = func_line[:-1]
@@ -31,6 +35,7 @@ class BVMGenerate(object):
                     mdl.func_arg_type_byte.get(_.strip())
                     for _ in func_arg_list
                 ]                                               # [b'\x02', b'\x02', b'\x01', b'\x02']
+                self._named_fn_ret_type_bytes[_trimed_fn_name] = mdl.func_arg_type_byte.get(func_ret_type)
                 return func_line
             else:
                 return line.rstrip()
@@ -365,7 +370,11 @@ class BVMGenerate(object):
             _1 = _1_rel_bytecode_pos.to_bytes(4, byteorder='little')
             _2 = _2_abs_str_pos.to_bytes(4, byteorder='little')
             _3 = _3_abs_arg_pos.to_bytes(4, byteorder='little')
-            _4 = _4_arg_nums.to_bytes(4, byteorder='little')
+            ret_type = self._named_fn_ret_type_bytes.get(k)
+            if ret_type:
+                _4 = _4_arg_nums.to_bytes(1, byteorder='little') + ret_type + bytes(2)
+            else:
+                _4 = _4_arg_nums.to_bytes(4, byteorder='little')
             named_fn_chunk_byte_list.append(b''.join([_1, _2, _3, _4]))
         func_names_bytes = b''.join(named_fn_chunk_byte_list)
 

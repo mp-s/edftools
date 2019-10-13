@@ -57,6 +57,7 @@ class BvmData:
             func_name = self._get_string(_lst[1])
             arg_index = _lst[2]
             arg_count = _lst[3][0]
+            func_return_type_byte = _lst[3][1:2]
 
             _index = self._get_int(arg_index)
             _arg_byte = self._get_content(_index, _index+1)
@@ -68,7 +69,11 @@ class BvmData:
                         arg_type = arg_type.to_bytes(1, self._byteorder)
                         types_name.append(func_arg_types.get(arg_type))
                 type_str = ', '.join(types_name)
-                return_string = f'\n{func_name}:   /- {func_name}({type_str})'
+                if func_return_type_byte != b'\x00':
+                    return_type_str = func_arg_types.get(func_return_type_byte)
+                else:
+                    return_type_str = ''
+                return_string = f'\n{func_name}:   /- {return_type_str}({type_str})'
             else:
                 class_name_ = self._get_string(arg_index)
                 return_string = f'\n{class_name_}::{func_name}:'
