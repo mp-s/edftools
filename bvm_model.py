@@ -73,7 +73,7 @@ asm_opcode = {
     # pop A
     # test**(without testz)
     b'\x1d': ('testnand', 1),     # if A!=0 and B!=0 (push 1) else (push 0)
-    b'\x1e': ('test2nor', 1),    # if A!=0 or B!=0 (push 1) else (push 0)
+    b'\x1e': ('testor', 1),    # if A!=0 or B!=0 (push 1) else (push 0)
     b'\x1f': ('testz', 1),      # pop B, push !B
     b'\x20': ('testg', 1),      # if A < B  (push 1) else (push 0)
     b'\x21': ('testge', 1),     # if A <= B (push 1) else (push 0)
@@ -222,8 +222,8 @@ def compiler_bytecode(opcode:str, compiled_operand:bytes = None):
         'inc': b'\x0a',
         'dec': b'\x0b',
         # 1,
-        'test2z': b'\x1d',
-        'test2nz': b'\x1e',
+        'testnand': b'\x1d',
+        'testor': b'\x1e',
         'testz': b'\x1f',
         'testg': b'\x20',
         'testge': b'\x21',
