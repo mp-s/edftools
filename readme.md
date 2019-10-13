@@ -9,3 +9,6 @@
     > python bvm_compiler.py "r:\test.asm"  
 
 target file are same path with source file.
+
+* [Thanks @KittopiaCreator](https://gitlab.com/kittopiacreator/edf-tools)  
+* [Thanks @Zeddy](https://github.com/zeddidragon/sgott)
