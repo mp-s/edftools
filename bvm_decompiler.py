@@ -42,7 +42,6 @@ class BvmData:
         ptr_list = [ptr_data[i:i+4] for i in range(0, size, 4)]
         for index, str_index in enumerate(ptr_list):
             str_ = self._get_string(str_index)
-            # self._global_vars.append(f'name {str_} // {index}')
             self._global_vars[index] = str_
     
     def get_func_name(self):
@@ -70,7 +69,6 @@ class BvmData:
                         types_name.append(func_arg_types.get(arg_type))
                 type_str = ', '.join(types_name)
                 return_string = f'\n{func_name}:   /- {func_name}({type_str})'
-                pass # 有传参 有类型 后续处理
             else:
                 class_name_ = self._get_string(arg_index)
                 return_string = f'\n{class_name_}::{func_name}:'
@@ -90,15 +88,8 @@ class BvmData:
 
     def __asm_decompiler(self, chunk:bytes, buffer_dict:dict) -> dict:
         offset = 0
-        operands_use_int = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3'] # unsigned int
+        operands_use_uint = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3']
         operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
-        # self._asm_lines = {}
-
-# bugs: edf5\m003
-#       bytecode: 9a d0 01
-#       asm: pushstr 1d0
-#       position-> b'\x00\x00'
-#       wtf? 
 
         while(offset < len(chunk)):
             opcode = chunk[offset:offset+1]
@@ -136,7 +127,7 @@ class BvmData:
                     operand_str = self._convert_operand(operand, operand_len)
                 elif opcode_asm == 'pushstr':   # all bytes offset
                     operand_str = f'\"{self._get_string(operand, self._index_str)}\"'
-                elif opcode_asm in operands_use_int:    # all int
+                elif opcode_asm in operands_use_uint:    # all int
                     operand_str = str(self._get_int(operand))
                     # 添加注释
                     comments = call_func_types.get(operand_str, None)
@@ -172,8 +163,6 @@ class BvmData:
         # global vars
         for index, var_name in self._global_vars.items():
             out_buffer.append(f'name {var_name}    // {index}')
-        # out_buffer.extend(self._global_vars)
-        # constor
         constructor_name = self._get_string(self._index_class.to_bytes(4, byteorder=self._byteorder))
         out_buffer.append(f'\n{constructor_name}::{constructor_name}:')
         for values in self._construct_lines.values():

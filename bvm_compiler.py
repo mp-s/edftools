@@ -1,33 +1,9 @@
 
 import struct
 import bvm_model as mdl
-'''
-    1.构造header
-    2.构造全局变量名称位置表
-    3.构造有名函数信息表
-    4.全局变量初始化部分
-    5.编译后字节码部分
-    6.string表1部分(bytecode pushstr)
-    7.string表2部分(global var name)
-    8.string表3部分 (func name)
-    9.函数传参表部分  *类名部分
-    最后的四字节补全
-    最后的16字节补全
-'''
-
 
 class BVMGenerate(object):
-    '''
-        剥离 注释
-        处理 name指令
-        处理 类名         带类名函数标记
-        处理 函数名, 类标记, 传参       非跳转点
-        处理 strintable   string转操作数
-        编译字节码        获取长度
-        处理 跳转点 !!    跳转点转操作数
-        写入字节码
-        完成整个文件-->>>
-    '''
+
     def __init__(self, debug_flag: bool = False):
         # self._trimed_data = None
         self._debug_flag = debug_flag
@@ -117,13 +93,6 @@ class BVMGenerate(object):
                 if self._class_name in func_name: # Mission::Mission:
                     flag_constructor = True
 
-    '''
-        bytecode编译步骤:
-        1. 字符串提取 转换成位置    done
-        2. int, float提取           done
-        3. hex提取                  done
-        4. jmp点提取 转换为位置     done
-    '''
     def _compile_str(self):
         ''' 提取字符串 合块 获得位置 应用入代码区 '''
         str_list = []
@@ -317,19 +286,6 @@ class BVMGenerate(object):
             else:
                 pass
         self._fn_arg_bytes_list = _block3_list
-        print()
-        # func_name_chunk_list = []
-        # for k, v in _named_fn_bytecode_positions.items():
-        #     #  构建0x10数据
-        #     _1 = v.to_bytes(4, byteorder='little')
-        #     name_str_pos = _named_fn_name_str_positions.get(k, 0)
-        #     _2 = name_str_pos.to_bytes(4, byteorder='little')
-        #     arg_pos = _named_fn_block3_positions.get(k, 0)
-        #     _3 = arg_pos.to_bytes(4, byteorder='little')
-        #     _num = _named_fn_block4.get(k, 0)
-        #     _4 = _num.to_bytes(4, byteorder='little')
-        #     func_name_chunk_list.append(_1 + _2 + _3 + _4)
-        # return b''.join(func_name_chunk_list)
 
     def _generate_target(self):
         ''' 生成整个文件 '''
