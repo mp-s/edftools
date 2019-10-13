@@ -1,4 +1,4 @@
-import os
+
 import struct
 import bvm_model as mdl
 '''
@@ -477,6 +477,20 @@ class BVMGenerate(object):
             f.write(bytes_buffer)
 
 if __name__ == "__main__":
-    p = BVMGenerate()
-    p.read('q:/output.asm')
-    p.build_file('q:/test.bvm')
+    import os, sys
+    if len(sys.argv) == 1:
+        print('source file required!')
+        sys.exit()
+    else:
+        file_path = sys.argv[1]
+    _sp = os.path.splitext(file_path)
+    if len(sys.argv) == 3:
+        output_path = sys.argv[2]
+    else:
+        output_path = f'{_sp[0]}.bvm'
+    if '.asm' == _sp[1].lower() or '.txt' == _sp[1].lower():
+        print('working...')
+        bvm_ = BVMGenerate()
+        bvm_.read(file_path)
+        bvm_.build_file(output_path)
+        print('done!')

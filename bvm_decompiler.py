@@ -283,8 +283,6 @@ class BvmData:
 if __name__ == "__main__":
     import os, sys
     if len(sys.argv) == 1:
-        # path = r"d:\arena\EARTH DEFENSE FORCE 5\r\MISSION\M003\MISSION.BVM"
-        # file_path = path
         print('BVM file required!')
         sys.exit()
     else:
