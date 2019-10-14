@@ -12,9 +12,19 @@ offset_list = {
     'data_align_index': 0x4c
 }
 
+'''
+|-----|
+|  A  |
+|  B  |
+
+** 在汇编里,
+push A
+push B
+testg  // (A < B) == True
+'''
 asm_opcode = {
-    # pop A
     # pop B
+    # pop A
     # &A = B
     # push B 
     b'\x01': ('cvtstore', 1),
@@ -22,15 +32,15 @@ asm_opcode = {
     b'\x02': ('pop', 0),
     b'\x03': ('pushtop', 0),
 
-    # pop A
     # pop B
+    # pop A
     # ***
     b'\x04': ('add', 1),    # push (A + B)
     b'\x05': ('sub', 1),    # push (A - B)
     b'\x06': ('mult', 1),   # push (A * B)
     b'\x07': ('div', 1),    # push (A / B)
-    # pop A
     # pop B
+    # pop A
     # mod 
     b'\x08': ('mod', 1),    # push (A % B)
 
@@ -39,8 +49,8 @@ asm_opcode = {
     b'\x0a': ('inc', 1),    # ++
     b'\x0b': ('dec', 1),    # --
 
-    # pop A
     # pop B
+    # pop A
     # *** 
     b'\x0c': ('sar', 0),    # A >> B
     b'\x0d': ('sll', 0),    # A << B
@@ -107,14 +117,14 @@ asm_opcode = {
 
     b'\x33': ('push', 0), # push 1, before with 15
 
-    # pop A
     # pop B
+    # pop A
     # jmp* location_xxx 
     b'\x34': ('jmpne', 0), b'\x74': ('jmpne', 1), b'\xb4': ('jmpne', 2),    # pop B,pop A, if A != B, jmp
     b'\x35': ('jmpe', 0), b'\x75': ('jmpe', 1), b'\xb5': ('jmpe', 2),       # pop B,pop A, if A == B, jmp
 
-    # pop A
     # pop B
+    # pop A
     # &A = B 
     b'\x36': ('store', 0),
 
@@ -169,19 +179,19 @@ call_func_types = {
     '9001': 'CreateEventFactorTimer(',
     '9002': 'CreateEventFactorWait2(',
 
-    '9050' : "CreateEventFactorCheckFlagTrue(",
-    '9051' : "CreateEventFactorCheckFlagFalse(",
+    '9050': "CreateEventFactorCheckFlagTrue(",
+    '9051': "CreateEventFactorCheckFlagFalse(",
     
     '9100': 'CreateEventFactorAllEnemyDestroy',
 
     "9110": "CreateEventFactorTeamObjectCount(",
     "9114": "CreateEventFactorTeamGeneratorObjectCount(",
 
-    '9201' : "CreateEventFactorObjectDestroy(",
+    '9201': "CreateEventFactorObjectDestroy(",
 
     '9300': 'CreateEventFactorAiMoveEnd(',
     
-    '9400' : "CreateEventPlayerAreaCheck(",
+    '9400': "CreateEventPlayerAreaCheck(",
 }
 
 # compiler
