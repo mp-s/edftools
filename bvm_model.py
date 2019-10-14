@@ -156,7 +156,10 @@ call_func_types = {
     '1013': 'void loc_140117538(int, wchar_t*, float, wchar_t*, int, float);',
     '1020': 'void CreatNeutral(wchar_t*, wchar_t*, float);',
 
+    '2000': 'create_emeny_single',
+    '2001': 'create_generator_',
     '2002': 'void CreateEnemyGroup(waypoint, radius, sgo_name, count, health_scale, has_aggro);',
+    '2004': 'create_enemy_spawn_ground',
     '2030': 'CreateEnemySquad(',
 
     '3100': 'SetAiRouteSpeed(',
