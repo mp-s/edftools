@@ -1,11 +1,11 @@
+//  全局变量名字定义
 name g_sergent    // 0
 name g_sergent_follower1    // 1
 name g_sergent_follower2    // 2
 name g_sergent_follower3    // 3
 
-Mission::Mission:
-  push  1
-  neg  0x00
+Mission::Mission:   // 全局变量的初始化
+  push  0
   storeabs  0    // g_sergent
   push  1
   neg  0x00
@@ -18,51 +18,12 @@ Mission::Mission:
   storeabs  3    // g_sergent_follower3
   exit
 
-Mission::Main:
-  call        location_791
-location_791 :
-  subrel      0x02
-  storerel    0x00
-  push        0
-  push        0
-  push        0
-  push        0
-  cuscall0    18
-  push        0
-  call        location_88
-  call        location_126
-  cuscall0    10
-  pushstr     "app:/ui/lyt_HUiMissionCleared.sgo"
-  push        -1
-  cuscall0    13    // LoadResource(
-  pushstr     "app:/ui/lyt_HUiMissionFailed.sgo"
-  push        -1
-  cuscall0    13    // LoadResource(
-  pushstr     "app:/ui/lyt_HUiFailedResult.sgo"
-  push        -1
-  cuscall0    13    // LoadResource(
-  pushstr     "app:/Map/nw_Hillycity_light.mac"
-  pushstr     "fine"
-  push        -1
-  cuscall0    14    // LoadMap(
-  cuscall0    16
-  cuscall0    12    // WaitOnLoad(
-  cuscall0    10000
-  cuscall0    11
-  pushstr     "app:/Map/nw_Hillycity_light.mac"
-  pushstr     "fine"
-  cuscall0    100    // SetMap(
-  pushstr     "プレイヤー"
-  cuscall0    1000    // CreatePlayer(waypoint, 0);
-  jmp         location_787
-location_787 :
+//  无需关心的代码块与代码跳转点, 通常为某作固定样式, 此块为edf5专有
+location_0 :
   loadrel     0x00
-  addrel      0x02
+  addrel      0x03
   ret
-  exit
 
-Voice2:   /- (string, float)
-  call        location_4
 location_4 :
   subrel      0x03
   storerel    0x00
@@ -74,20 +35,11 @@ location_4 :
   loadrel     0x02
   cuscall0    200    // Wait(
   jmp         location_0
-location_0 :
+
+location_25 :
   loadrel     0x00
-  addrel      0x03
+  addrel      0x01
   ret
-  exit
-
-RadioBegin:   /- ()
-  call        location_29
-  exit
-
-RadioEnd:   /- ()
-  call        location_42
-  exit
-
 
 location_29 :
   subrel      0x01
@@ -96,6 +48,11 @@ location_29 :
   cuscall0    4000
   jmp         location_25
 
+location_38 :
+  loadrel     0x00
+  addrel      0x01
+  ret
+
 location_42 :
   subrel      0x01
   storerel    0x00
@@ -103,9 +60,10 @@ location_42 :
   cuscall0    4000
   jmp         location_38
 
-RadioVoice:   /- (string, float)
-  call        location_56
-  exit
+location_52 :
+  loadrel     0x00
+  addrel      0x03
+  ret
 
 location_56 :
   subrel      0x03
@@ -121,14 +79,11 @@ location_56 :
   call        location_42
   cuscall0    4002
   jmp         location_52
-location_52 :
-  loadrel     0x00
-  addrel      0x03
-  ret
 
-EconomyMode:   /- (int)
-  call        location_88
-  exit
+location_84 :
+  loadrel     0x00
+  addrel      0x02
+  ret
 
 location_88 :
   subrel      0x02
@@ -137,36 +92,27 @@ location_88 :
   loadrel     0x01
   cuscall0    17
   jmp         location_84
-location_84 :
-  loadrel     0x00
-  addrel      0x02
-  ret
 
-WaitAiMoveEnd:   /- (int)
-  call        location_103
 location_103 :
   subrel      0x02
   storerel    0x00
   storerel    0x01
-  exit
-
-InitializeCommon:   /- ()
-  call        location_126
-  exit
-location_126 :
-  subrel      0x01
-  storerel    0x00
-  cuscall0    5
-  jmp         location_122
 
 location_122 :
   loadrel     0x00
   addrel      0x01
   ret
 
-MissionClear_Common:   /- (float)
-  call        location_137
-  exit
+location_126 :
+  subrel      0x01
+  storerel    0x00
+  cuscall0    5
+  jmp         location_122
+
+location_133 :
+  loadrel     0x00
+  addrel      0x04
+  ret
 
 location_137 :
   subrel      0x04
@@ -201,14 +147,11 @@ location_150 :
   cuscall0    3
   jmp         location_133
 
-location_133 :
+location_196 :
   loadrel     0x00
-  addrel      0x04
+  addrel      0x01
   ret
 
-MissionClear:   /- ()
-  call        location_200
-  exit
 location_200 :
   subrel      0x01
   storerel    0x00
@@ -224,14 +167,11 @@ location_200 :
   call        location_137
   jmp         location_196
 
-location_196 :
+location_235 :
   loadrel     0x00
   addrel      0x01
   ret
 
-FinalMissionClear:   /- ()
-  call        location_239
-  exit
 location_239 :
   subrel      0x01
   storerel    0x00
@@ -247,14 +187,11 @@ location_239 :
   call        location_137
   jmp         location_235
 
-location_235 :
+location_275 :
   loadrel     0x00
   addrel      0x01
   ret
 
-MissionEscapeClear:   /- ()
-  call        location_279
-  exit
 location_279 :
   subrel      0x01
   storerel    0x00
@@ -270,14 +207,10 @@ location_279 :
   call        location_137
   jmp         location_275
 
-location_275 :
+location_315 :
   loadrel     0x00
-  addrel      0x01
+  addrel      0x06
   ret
-
-MissionGameOverEvent:   /- ()
-  call        location_319
-  exit
 
 location_319 :
   subrel      0x06
@@ -359,14 +292,10 @@ location_467 :
   cuscall0    3
   jmp         location_315
 
-location_315 :
+location_481 :
   loadrel     0x00
-  addrel      0x06
+  addrel      0x05
   ret
-
-SceneEffect_Snow:   /- (float, float, int, float)
-  call        location_485
-  exit
 
 location_485 :
   subrel      0x05
@@ -393,14 +322,11 @@ location_485 :
   cuscall0    5100
   jmp         location_481
 
-location_481 :
+location_564 :
   loadrel     0x00
-  addrel      0x05
+  addrel      0x07
   ret
 
-SceneEffect_Rain:   /- (float, float, float, int, float, float)
-  call        location_568
-  exit
 location_568 :
   subrel      0x07
   storerel    0x00
@@ -426,15 +352,10 @@ location_568 :
   cuscall0    5101
   jmp         location_564
 
-location_564 :
+location_635 :
   loadrel     0x00
-  addrel      0x07
+  addrel      0x08
   ret
-
-
-SceneEffect_RainEx:   /- (float, float, float, float, int, float, float)
-  call        location_639
-  exit
 
 location_639 :
   subrel      0x08
@@ -461,14 +382,12 @@ location_639 :
   loadrel     0x07
   cuscall0    5101
   jmp         location_635
-location_635 :
+
+location_705 :
   loadrel     0x00
-  addrel      0x08
+  addrel      0x07
   ret
 
-SceneEffect_FugitiveDust:   /- (float, int, float, float, float, float)
-  call        location_709
-  exit
 location_709 :
   subrel      0x07
   storerel    0x00
@@ -487,13 +406,12 @@ location_709 :
   loadrel     0x06
   cuscall0    5102
   jmp         location_705
-location_705 :
+
+location_746 :
   loadrel     0x00
   addrel      0x07
   ret
 
-SceneEffect_Fog:   /- (float, int, float, float, float, float)
-  call        location_750
 location_750 :
   subrel      0x07
   storerel    0x00
@@ -512,10 +430,188 @@ location_750 :
   loadrel     0x06
   cuscall0    5103
   jmp         location_746
-location_746 :
+
+
+location_mainret:   // main函数的call调用返回块部分 
   loadrel     0x00
-  addrel      0x07
+  addrel      0x02
   ret
 
+location_masin:     // 主脚本核心
+  subrel      0x02
+  storerel    0x00
+  push        0
+  push        0
+  push        0
+  push        0
+  cuscall0    18
+  push        0
+  call        location_88   // EconomyMode
+  call        location_126  // InitializeCommon
+  cuscall0    10
+  //    预读取不可变资源
+  pushstr     "app:/ui/lyt_HUiMissionCleared.sgo"
+  push        -1
+  cuscall0    13    // LoadResource(
+  pushstr     "app:/ui/lyt_HUiMissionFailed.sgo"
+  push        -1
+  cuscall0    13    // LoadResource(
+  pushstr     "app:/ui/lyt_HUiFailedResult.sgo"
+  push        -1
+  cuscall0    13    // LoadResource(
+    //    预读取地图
+  pushstr     "app:/Map/NW_Henden.mac"
+  pushstr     "fine"
+  push        -1
+  cuscall0    14    // LoadMap(
+      // 预读取物体sgo
+  pushstr     "app:/object/GIANTSPIDER01.SGO"
+  push        -1
+  cuscall0    13    // LoadResource(
+      // ------------
+  cuscall0    16
+  cuscall0    12    // WaitOnLoad(
+  cuscall0    10000
+  cuscall0    11
+  //  设置地图调用块
+  pushstr     "app:/Map/NW_Henden.mac"
+  pushstr     "fine"
+  cuscall0    100    // SetMap(
+      //  创建玩家实体
+  pushstr     "プレイヤー"
+  cuscall0    1000    // CreatePlayer(waypoint, 0);
+  //  播放bgm
+  pushstr     "BGM_inGame_Soutousen"
+  cuscall0    300    // PlayBGM(
+      //  将实体放入地图种
+  pushstr     "プレイヤー"
+  push        0.0f
+  pushstr     "app:/object/GIANTSPIDER01.SGO"
+  push        10
+  push        0.1f
+  push        0
+  cuscall0    2002    // void CreateEnemyGroup(waypoint, radius, sgo_name, count, health_scale, has_aggro);
+    // 下一个命名函数跳转, 绑定事件
+  pushstr     "Func_1"
+  push        110.0f
+  push        0
+  cuscall0    2    // void RegisterEvent(function_name, ?, multiple_functions_per_event(?));
+    // 注册事件
+  push        10.0f
+  cuscall0    9100    // CreateEventFactorAllEnemyDestroy
+  //  无条件跳转
+  jmp location_mainret
+
+    // 有名函数call调用返回块部分
+location_func1ret :
+  loadrel     0x00
+  addrel      0x01
+  ret
+    // 有名函数核心
+location_func1in:
+  subrel      0x01
+  storerel    0x00
+  loadabs     0    // Func_1___Counter
+  pushtop
+  inc         0x00
+  storeabs    0    // Func_1___Counter
+  pop
+  push        1
+  loadabs     0    // Func_1___Counter
+  push        1
+  testne      0x00
+  testnand    0x00
+  jmpf        location_905
+  jmp         location_func1ret
+
+
+location_905 :
+  push        1.0f
+  cuscall0    9
+  push        1
+  cuscall1    1    // Pop()
+  push        0
+  jmpne       location_920
+  jmp         location_881ret
+
+location_920 :
+  call        location_200  //  MissionClear  胜利
+  jmp         location_881ret
+
+ //  无需关心的代码块与代码跳转点, 通常为某作固定样式, 此块为edf5专有
+Voice2:   /- (string, float)
+  call        location_4
   exit
 
+RadioBegin:   /- ()
+  call        location_29
+  exit
+
+RadioEnd:   /- ()
+  call        location_42
+  exit
+
+RadioVoice:   /- (string, float)
+  call        location_56
+  exit
+
+EconomyMode:   /- (int)
+  call        location_88
+  exit
+
+WaitAiMoveEnd:   /- (int)
+  call        location_103
+  exit
+
+InitializeCommon:   /- ()
+  call        location_126
+  exit
+
+MissionClear_Common:   /- (float)
+  call        location_137
+  exit
+
+MissionClear:   /- ()
+  call        location_200
+  exit
+
+FinalMissionClear:   /- ()
+  call        location_239
+  exit
+
+MissionEscapeClear:   /- ()
+  call        location_279
+  exit
+
+MissionGameOverEvent:   /- ()
+  call        location_319
+  exit
+
+SceneEffect_Snow:   /- (float, float, int, float)
+  call        location_485
+  exit
+
+SceneEffect_Rain:   /- (float, float, float, int, float, float)
+  call        location_568
+  exit
+
+SceneEffect_RainEx:   /- (float, float, float, float, int, float, float)
+  call        location_639
+  exit
+
+SceneEffect_FugitiveDust:   /- (float, int, float, float, float, float)
+  call        location_709
+  exit
+
+SceneEffect_Fog:   /- (float, int, float, float, float, float)
+  call        location_750
+  exit
+
+    // 主函数入口
+Mission::Main:
+  call location_masin
+  exit
+    // 有名函数入口
+Mission::Func_1:
+  call location_func1in
+  exit
