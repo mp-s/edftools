@@ -17,10 +17,12 @@ offset_list = {
 |  A  |
 |  B  |
 
-** 在汇编里,
+** 在该代码里,
 push A
 push B
-testg  // (A < B) == True
+testg  // (A < B)
+jmpt   // if (A < B) == True
+jmpf   // if (A < B) == False
 '''
 asm_opcode = {
     # pop B
