@@ -6,3 +6,4 @@ demo.py
 hello.py
 templates/index.html
 templates/uploaded.html
+/*.bvm
