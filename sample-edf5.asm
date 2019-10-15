@@ -152,7 +152,7 @@ location_196 :
   addrel      0x01
   ret
 
-location_200 :
+location_missionclear :
   subrel      0x01
   storerel    0x00
   push        2.0f
@@ -532,11 +532,11 @@ location_905 :
   cuscall1    1    // Pop()
   push        0
   jmpne       location_920
-  jmp         location_881ret
+  jmp         location_func1ret
 
 location_920 :
-  call        location_200  //  MissionClear  胜利
-  jmp         location_881ret
+  call        location_missionclear  //  MissionClear  胜利
+  jmp         location_func1ret
 
  //  无需关心的代码块与代码跳转点, 通常为某作固定样式, 此块为edf5专有
 Voice2:   /- (string, float)
@@ -572,7 +572,7 @@ MissionClear_Common:   /- (float)
   exit
 
 MissionClear:   /- ()
-  call        location_200
+  call        location_missionclear
   exit
 
 FinalMissionClear:   /- ()
