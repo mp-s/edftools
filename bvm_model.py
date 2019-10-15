@@ -105,11 +105,11 @@ asm_opcode = {
     b'\x2a': ('ret', 0),
 
     # Function calls
-    b'\x2b': ('cuscall', 0), b'\x6b': ('cuscall', 1), b'\xab': ('cuscall', 2),
+    b'\x2b': ('cuscall', 0), b'\x6b': ('cuscall', 1), b'\xab': ('cuscall', 2), b'\xeb': ('cuscall', 4),
     b'\x2c': ('cuscall0', 0), b'\x6c': ('cuscall0', 1), b'\xac': ('cuscall0', 2), b'\xec': ('syscall1', 4),
-    b'\x2d': ('cuscall1', 0), b'\x6d': ('cuscall1', 1), b'\xad': ('cuscall1', 2),
-    b'\x2e': ('cuscall2', 0), b'\x6e': ('cuscall2', 1),
-    b'\x2f': ('cuscall3', 0), b'\x6f': ('cuscall3', 1),
+    b'\x2d': ('cuscall1', 0), b'\x6d': ('cuscall1', 1), b'\xad': ('cuscall1', 2), b'\xad': ('cuscall1', 4),
+    b'\x2e': ('cuscall2', 0), b'\x6e': ('cuscall2', 1), b'\xae': ('cuscall2', 2), b'\xae': ('cuscall2', 4),
+    b'\x2f': ('cuscall3', 0), b'\x6f': ('cuscall3', 1), b'\xaf': ('cuscall3', 2), b'\xaf': ('cuscall3', 4),
 
     b'\x30': ('exit', 0),
 
