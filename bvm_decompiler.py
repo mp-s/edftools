@@ -126,7 +126,9 @@ class BvmData:
                 operand = chunk[offset:offset+operand_len]
                 comments = None
 
-                if (4 == operand_len and opcode_asm != 'pushstr'):  # all floats
+                if (4 == operand_len and opcode_asm != 'pushstr' 
+                        and opcode_asm not in operands_use_uint 
+                        and opcode_asm not in operands_use_offset):  # all floats
                     operand_str = self._convert_operand(operand, 4)  # float_hex.hex_to_float(operand)
                 elif opcode_asm == 'push':  # all numbers
                     operand_str = self._convert_operand(operand, operand_len)
