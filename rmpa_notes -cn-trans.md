@@ -119,7 +119,7 @@ Route and Camera Waypoints aren't extended to keep aligned to 0, so only the fir
 ## Types:
 ```
     0x00
-    AAAA AAAA 0000 0000 BBBB BBBB 0000 0000  0x0F  
+    AAAA AAAA bbbb bbbb BBBB BBBB 0000 0000  0x0F  
     CCCC CCCC EEEE EEEE gggg gggg DDDD DDDD  0x1F  
     ffff ffff FFFF FFFF ---- ---- ---- ----  0x2F  
     ---- ---- 0000 0000 0000 0000 
@@ -129,6 +129,7 @@ Route and Camera Waypoints aren't extended to keep aligned to 0, so only the fir
  所有偏移量都是从“单个航点”的数据块的第一个字节计算得出的。
 + `A` 0x00 is the waypoint's number in the current route, starting from 0.
     > 当前路线中的航点编号，从0开始。  *用户感知*
++ `b` 0x04  多少个下一航点
 + `B` 0x08  一个0x10大小的块(未在本文件列出)的偏移量，该块控制下一个航点的位置。
 + `C` 0x10 ~~~is an offset to an SGO that'll apply extra settings, mostly just width.~~~
     > 定义的下一航点块 结束位置(宽度)。

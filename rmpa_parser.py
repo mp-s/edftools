@@ -120,6 +120,7 @@ class RMPAParse:
         self_pos = route_def_pos
         bytes_ = self._get_content_bytes(route_def_pos, size=rt_size)
         current_route_number = self._get_4bytes_to_uint(0x00, data_chunk=bytes_)
+        next_route_count = self._get_4bytes_to_uint(0x04, bytes_)
         next_route_bind_block_start_pos = self._get_4bytes_to_uint(0x08, data_chunk=bytes_)
         next_route_bind_block_end_pos = self._get_4bytes_to_uint(0x10, data_chunk=bytes_)
         route_bind_pos = self_pos + next_route_bind_block_start_pos
@@ -146,6 +147,7 @@ class RMPAParse:
             'has extra sgo': True if extra_sgo_pos else False,
             'sgo data': extra_sgo_b64,
             'route number': current_route_number,
+            'next route count': next_route_count,
             'current->next number': route_p,
         }
         if self._debug_flag:
