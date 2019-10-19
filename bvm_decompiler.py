@@ -151,6 +151,28 @@ class BvmData:
                 else:
                     _ = operand.hex() if self._byteorder == 'big' else operand[::-1].hex()
                     operand_str = f'0x{_}'
+                    if 'testg' == opcode_asm:
+                        comments = 'A < B'
+                    elif 'testle' == opcode_asm:
+                        comments = 'A >= B'
+                    elif 'testge' == opcode_asm:
+                        comments = 'A <= B'
+                    elif 'testl' == opcode_asm:
+                        comments = 'A > B'
+                    elif 'teste' == opcode_asm:
+                        comments = 'A == B'
+                    elif 'testne' == opcode_asm:
+                        comments = 'A != B'
+                    elif 'testnand' == opcode_asm:
+                        comments = 'A != 0 and B != 0'
+                    elif 'testor' == opcode_asm:
+                        comments = 'A != 0 or B != 0'
+                    elif 'testz' == opcode_asm:
+                        comments = 'pop B, push !B'
+                    elif 'cvtstore' == opcode_asm:
+                        comments = 'pop B, pop A, *A=B, push B'
+                    else:
+                        pass
                 
                 offset += operand_len
                 buffer.append(operand_str)

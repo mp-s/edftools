@@ -55,14 +55,14 @@ Route and Camera Waypoints aren't extended to keep aligned to 0, so only the fir
     DDDD DDDD 0000 0000 EEEE EEEE 0000 0000 
 ```
 **Type Headers**, 0x20 大小:  
-+ `A` 0x00 多少枚举子头  
-+ `B` 0x04 第一个枚举器的起始偏移  
++ `A` 0x00 多少枚举子头 **构建必须**  
++ `B` 0x04 第一个枚举器的起始偏移 **构建必须**  
 + `C` 0x0C 类型数据末尾的偏移量（与下一种数据类型的起始位置相同）。  
 + `D` 0x10 is the numeric waypoint identifier based on the whole RMPA.
     > 是基于整个RMPA的数字航点标识符。
 + `E` 0x18 指向空字符串？(大概率) 或者，可能是出于某种原因的字符串表？ 
     > *列字符串表全靠它:D*
-    - *用户感知?*
+    - *用户感知?*  **构建必须**
   
   
 ```
@@ -73,11 +73,11 @@ Route and Camera Waypoints aren't extended to keep aligned to 0, so only the fir
 > 枚举子头
 + `A` 0x08 指向枚举将结束的位置。 
 + `b` 0x10 字符串长度  
-+ `B` 0x14 字符串的偏移量，可能只是名称。  *用户感知*  
++ `B` 0x14 字符串的偏移量，可能只是名称。  *用户感知*  **构建必须** 
 + `C` 0x18 is how many pieces of data to process. ~~~Multiple Enumeration Sub-Headers add up to the total amount of data pieces in the section.~~~  
-    > 是要处理多少片数据。 这一个枚举子标题控制几条数据.
+    > 是要处理多少片数据。 这一个枚举子标题控制几条数据.  **构建必须**
 + `D` 0x1C points to where the enumeration will start.
-    > 指向枚举将开始的位置。
+    > 指向枚举将开始的位置。  **构建必须**
   
   
 ```
@@ -120,7 +120,7 @@ Route and Camera Waypoints aren't extended to keep aligned to 0, so only the fir
 ```
     0x00
     AAAA AAAA bbbb bbbb BBBB BBBB 0000 0000  0x0F  
-    CCCC CCCC EEEE EEEE gggg gggg DDDD DDDD  0x1F  
+    CCCC CCCC EEEE EEEE dddd dddd DDDD DDDD  0x1F  
     ffff ffff FFFF FFFF ---- ---- ---- ----  0x2F  
     ---- ---- 0000 0000 0000 0000 
                                   0x3C
@@ -129,14 +129,18 @@ Route and Camera Waypoints aren't extended to keep aligned to 0, so only the fir
  所有偏移量都是从“单个航点”的数据块的第一个字节计算得出的。
 + `A` 0x00 is the waypoint's number in the current route, starting from 0.
     > 当前路线中的航点编号，从0开始。  *用户感知*
+
 + `b` 0x04  多少个下一航点
 + `B` 0x08  一个0x10大小的块(未在本文件列出)的偏移量，该块控制下一个航点的位置。
 + `C` 0x10 ~~~is an offset to an SGO that'll apply extra settings, mostly just width.~~~
     > 定义的下一航点块 结束位置(宽度)。
+
 + `E` 0x14 is the numeric waypoint identifier based on the whole RMPA.
     > 基于整个RMPA的数字航点标识符。
-+ `g` 0x18 扩展的sgo文件体积 (无sgo则为0)
+
++ `d` 0x18 扩展的sgo文件体积 (无sgo则为0)
 + `D` 0x1C 扩展SGO的 开始offset？ (无sgo则为0)  *出来的结果编码后,用户感知*
+
 + `f` 0x20 waypoint 名称字符串长度
 + `F` 0x24 路径航路点名称的偏移量。 并非所有航路点都直接指向有效字符串，因为并非所有航路点都按名称使用。  *用户感知*  
 - `-` 用户感知 坐标
@@ -233,6 +237,6 @@ Remember! All offsets are calculated from the first byte of the _individual node
 + `B` 0x08 is the numeric waypoint identifier based on the whole RMPA?  
     > 基于整个RMPA的数字航点标识符  
     > 紧接type headers 的 identifier 计算
-+ 第一组坐标浮点是spawnpoint，第二组坐标浮点数是spawnpoint指向的位置。(双坐标定一条线) *用户感知*  
++ 第一组坐标浮点是spawnpoint，第二组坐标浮点数是spawnpoint指向的位置。(双坐标定一条线) *用户感知*      **构建必须**
 + `d` 0x30 名字字串长度
-+ `C` 0x34 spawnpoint 名称的偏移量。 *用户感知*  
++ `C` 0x34 spawnpoint 名称的偏移量。 *用户感知*  **构建必须**

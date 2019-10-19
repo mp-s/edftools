@@ -27,7 +27,7 @@ jmpf   // if (A < B) == False
 asm_opcode = {
     # pop B
     # pop A
-    # &A = B
+    # *A = B
     # push B 
     b'\x01': ('cvtstore', 1),
 
@@ -91,8 +91,8 @@ asm_opcode = {
     b'\x21': ('testge', 1),     # if A <= B (push 1) else (push 0)
     b'\x22': ('teste', 1),      # if A == B (push 1) else (push 0)
     b'\x23': ('testne', 1),     # if A != B (push 1) else (push 0)
-    b'\x24': ('testle', 1),     # if A > B  (push 1) else (push 0)
-    b'\x25': ('testl', 1),      # if A >= B (push 1) else (push 0)
+    b'\x24': ('testle', 1),     # if A >= B  (push 1) else (push 0)
+    b'\x25': ('testl', 1),      # if A > B (push 1) else (push 0)
 
     # jump
     # pop A
@@ -142,23 +142,55 @@ func_arg_types = {
 call_func_types = {
     '1': 'Pop()',
     '2': 'void RegisterEvent(function_name, ?, multiple_functions_per_event(?));',
-    '12': "WaitOnLoad(",
-    '13': 'LoadResource(',
-    "14": "LoadMap(",
-    '21': 'GetDifficulty(',
+    '12': "CheckResourcesLoaded()",
+    '13': 'LoadResource(string resource, int)',
+    "14": "LoadMapResource(string map, string weather, int)",
+    '18': 'pops four elements',
+    '21': 'int GetDifficulty()',
+
+    '30': 'int CreateUiElement(string Element)',
+    '31': 'DestroyUiElement(int id)',
+    '39': 'int CreateLytUiElement(sgo)',
 
     '44': 'void SoundController::PlayBgm(soundname);',
+    '45': 'FadeOutBGM(timeDelta);',
+    '46': 'FadeInBGM(soundname, timeDelta);',
+    '50': 'FadeUiElement?(int id, int fadeType, float time)',
+    '51': 'WaitForUiFade(int id)',
+    '66': 'VsStartPosition(SpawnPrefix)',
+    '95': 'PlaySurroundSE(spawnpoint, SoundPreset)',
     "100": "SetMap(",
-    "105": "MapObjectDestroy4(",
+    "102": "MapObjectDestroy(shapeNode)",
+    "103": "MapObjectDestroy2(shapeNode)",
+    "104": "MapObjectDestroy3(shapeNode)",
+    "105": "MapObjectDestroy4(shapeNode)",
+    "110": "MapObjectInvincible(shapeNode)",
+    "128": "SetObjectAction(int id, int action)",
+    '132': 'AddToMobGroup(string sgo, float)',
+    '134': 'CreateMobPath(routeNode, amount, spawndelay, lifeTime)',
     '140': 'Factor_AllEnemyDestroy(',
     '200': 'Wait(',
+    '209': 'MultiplyObjectHealth(int id, float percent)',
+    '213': 'SetObjectPosition(int, string)',
+    '234': 'SetObjectEnemy(int id)',
+    '235': 'SetObjectNeutral(int id)',
+    '236': 'SetObjectTeam(int id, int team)',
+    '257': 'int CreateEventObject(spawnpoint, sgo)',
+    '258': 'int CreateEventObject2(spawnpoint, sgo)',
+    '261': 'int CreateVehicle2(spawnpoint, sgo, scale)',
+    '287': 'ObjectNotOnRoute(int id)',
+    '288': 'CreateExplosion(spawnpoint, SizeDuration, quakeScale)',
+    '289': 'CreateQuake(spawnpoint, SizeDuration, quakeScale)',
     '300': 'PlayBGM(',
-    '1050': 'int loc_1401154BF(int, int);',
+    '308': 'SetGenerator(int id, int, sgo, int amount,float scale, float rate, float interval, bool)',
+    '350': 'PlayPresetSE(str SoundPreset)',
+    '356': 'SetAiObjectDirectionPoint(int, str, float, bool)',
+    '421': 'LookCameraToArea(sphereShape, time)',
 
-    '1000': 'CreatePlayer(waypoint, 0);',
-    '1001': 'CreatePlayer(waypoint, 1);',
-    '1002': 'CreatePlayer(waypoint, 2);',
-    '1003': 'int loc_1401170F6(void)    Returns the number of local (?) players.',
+    '1000': 'CreatePlayer(waypoint);',
+    '1001': 'CreatePlayer2(waypoint);  will crash',
+    '1002': 'CreatePlayer3(waypoint);  will crash',
+    '1003': 'int GetPlayerCount(void) ',
     '1005': 'int loc_140117223(int);',
     '1006': 'void loc_140117304(int, int, int);',
     '1007': 'void loc_1401173CB(int, int);',
@@ -167,27 +199,50 @@ call_func_types = {
     '1012': 'void loc_1401174E5(wchar_t*, float, wchar_t*, int, float, bool);',
     '1013': 'void loc_140117538(int, wchar_t*, float, wchar_t*, int, float);',
     '1020': 'void CreatNeutral(wchar_t*, wchar_t*, float);',
+    '1050': 'int loc_1401154BF(int, int);',
 
-    '2000': 'create_emeny_single',
-    '2001': 'create_generator_',
+    '2000': 'int CreateEnemy(spawnpoint, sgo, scale, active)',
+    '2001': 'int CreateEnemy2(spawnpoint, sgo, scale, active)',
     '2002': 'void CreateEnemyGroup(waypoint, radius, sgo_name, count, health_scale, has_aggro);',
-    '2004': 'create_enemy_spawn_ground',
+    '2003': 'void CreateEnemyGroup2(waypoint, radius, sgo_name, count, health_scale, has_aggro);',
+    '2004': 'create_enemy_spawn_ground(spawnpoint, radius, sgo, count, scale, active, time)',
+    '2005': 'CreateEnemyGroupGround2(spawnpoint, radius, sgo, count, scale, active, time)',
+    '2006': 'CreateFlyingEnemyGroup_Area(shapeNode, sgo, count, scale, active)',
+    '2007': 'CreateFlyingEnemyGroup_AreaRoute(shapeNode, routeNode, sgo, count, scale, active)',
+    '2008': 'CreateFlyingEnemyGroup_Area2(shapeNode, sgo, count, scale, active)',
+    '2009': 'CreateEnemyGroupGround_Area(shapeNode, sgo, count, scale, active)',
+    '2010': 'CreateFlyingEnemyGroup_AreaRoute2(ShapeNode, routeNode, sgo, count, hpScale, active)',
+    '2011': 'int CreateEnemySpawn(spawnpoint, sgoName, hpScale, active)',
+    '2022': 'CreateFlyingEnemyGroup_OnRoute(str routeNode, flaot distance, str sgoName, int count, float hpScale, bool active)',
+    '2023': 'int CreateEnemy3(string spawnpoint, string sgo_name, float hpScale, bool active)',
     '2030': 'CreateEnemySquad(',
 
-    '3100': 'SetAiRouteSpeed(',
-    '3101': 'SetAiRoute(',
+    '3100': 'SetAiRouteSpeed(int id, float speedfactor)',
+    '3101': 'SetAiRoute(int ID, string path)',
+    '3102': 'SetAiPath(int ID, string Path)',
 
-    '9000': 'CreateEventFactorWait(',
-    '9001': 'CreateEventFactorTimer(',
-    '9002': 'CreateEventFactorWait2(',
+    '9000': 'CreateEventFactorWait(float TimeDelta)',
+    '9001': 'CreateEventFactorTimer(int, float, TimeDelta)',
+    '9002': 'CreateEventFactorWait2(float TimeDelta)',
 
-    '9050': "CreateEventFactorCheckFlagTrue(",
-    '9051': "CreateEventFactorCheckFlagFalse(",
-    
-    '9100': 'CreateEventFactorAllEnemyDestroy',
+    '9044': 'CreateEventFactorAiMoveEnd(int ID)',
+    '9045': 'CreateEventFactorAiMoveEndOrDie(int ID)',
 
-    "9110": "CreateEventFactorTeamObjectCount(",
-    "9114": "CreateEventFactorTeamGeneratorObjectCount(",
+    '9050': "CreateEventFactorCheckFlagTrue(int)",
+    '9051': "CreateEventFactorCheckFlagFalse(int)",
+    '9054': 'CreateEventFactorAiFollow(int Soldier)',
+
+    '9100': 'CreateEventFactorAllEnemyDestroy(float delay)',
+
+    "9110": "CreateEventFactorTeamObjectCount(int team, int count)",
+    "9112": "CreateEventFactorAreaTeamObjectCount(string ShapeNode, int team, int count)",
+    "9113": "CreateEventFactorTeamBigObjectCount(int team, int count)",
+    "9114": "CreateEventFactorTeamGeneratorObjectCount(int count)",
+    "9116": "CreateEventFactorObjectGroupCount(int, int)",
+    "9117": "CreateEventFactorObjectGroupEncount(int)",
+    "9120": "CreateEventFactorTeamEncount(int team)",
+    "9121": "CreateEventFactorTeamNotEncount(int team)",
+    "9144": "CreateEventFactorPlayerAreaCheck(string ShapeNode)",
 
     '9201': "CreateEventFactorObjectDestroy(",
 
