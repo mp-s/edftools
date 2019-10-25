@@ -143,7 +143,7 @@ class RMPAParse:
 
         _ddd = {
             'name': name_str,
-            'position': coord,
+            'positions': coord,
             'has extra sgo': True if extra_sgo_pos else False,
             'sgo data': extra_sgo_b64,
             'route number': current_route_number,
@@ -171,7 +171,7 @@ class RMPAParse:
         _ldd = {
             'shape type name': shape_type_name_str,
             'shape var name': shape_var_name_str,
-            'shape data': shape_data_list,
+            'shape positions data': shape_data_list,
         }
         if self._debug_flag:
             _ldd['block position']: shape_data_abs_pos

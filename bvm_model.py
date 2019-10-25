@@ -158,6 +158,7 @@ call_func_types = {
     '50': 'FadeUiElement?(int id, int fadeType, float time)',
     '51': 'WaitForUiFade(int id)',
     '66': 'VsStartPosition(SpawnPrefix)',
+    '80': 'RecruitObject(int leader, int follower)',
     '95': 'PlaySurroundSE(spawnpoint, SoundPreset)',
     "100": "SetMap(",
     "102": "MapObjectDestroy(shapeNode)",
@@ -169,12 +170,15 @@ call_func_types = {
     '132': 'AddToMobGroup(string sgo, float)',
     '134': 'CreateMobPath(routeNode, amount, spawndelay, lifeTime)',
     '140': 'Factor_AllEnemyDestroy(',
-    '200': 'Wait(',
+    '200': 'Wait(float)',
     '209': 'MultiplyObjectHealth(int id, float percent)',
+    '210': 'SetEssential(int id, bool Essential)',
     '213': 'SetObjectPosition(int, string)',
     '234': 'SetObjectEnemy(int id)',
     '235': 'SetObjectNeutral(int id)',
     '236': 'SetObjectTeam(int id, int team)',
+    '254': 'int CreateTransporter(str, str, str, str, str,float)',
+    '255': 'int CreateTransporter2(str, str, str, str, str,float)',
     '257': 'int CreateEventObject(spawnpoint, sgo)',
     '258': 'int CreateEventObject2(spawnpoint, sgo)',
     '261': 'int CreateVehicle2(spawnpoint, sgo, scale)',
@@ -194,11 +198,12 @@ call_func_types = {
     '1005': 'int loc_140117223(int);',
     '1006': 'void loc_140117304(int, int, int);',
     '1007': 'void loc_1401173CB(int, int);',
-    '1010': 'int CreateFriend(float, wchar_t*, wchar_t*, bool);',
-    '1011': 'int CreateFriendSquad(wchar_t*, float, wchar_t*, wchar_t*, int, float, bool);',
-    '1012': 'void loc_1401174E5(wchar_t*, float, wchar_t*, int, float, bool);',
+    '1010': 'int CreateFriend(spawnpoint, sgo, scale, canRecruit);',
+    '1011': 'int CreateFriendSquad(str spawnpoint, float radius, str sgo_leader, str sgo_follower, int count, float hpScale, bool canRecruit);',
+    '1012': 'void CreateFriendGroup(str spawnpoint, float radius, str sgo, int count, float scale, bool canRecruit);',
     '1013': 'void loc_140117538(int, wchar_t*, float, wchar_t*, int, float);',
-    '1020': 'void CreatNeutral(wchar_t*, wchar_t*, float);',
+    '1020': 'int CreatNeutral(spawnpoint, sgo, scale);',
+    '1021': 'int create_Vehicle(spawnpoint, sgo)',
     '1050': 'int loc_1401154BF(int, int);',
 
     '2000': 'int CreateEnemy(spawnpoint, sgo, scale, active)',
@@ -215,11 +220,23 @@ call_func_types = {
     '2011': 'int CreateEnemySpawn(spawnpoint, sgoName, hpScale, active)',
     '2022': 'CreateFlyingEnemyGroup_OnRoute(str routeNode, flaot distance, str sgoName, int count, float hpScale, bool active)',
     '2023': 'int CreateEnemy3(string spawnpoint, string sgo_name, float hpScale, bool active)',
-    '2030': 'CreateEnemySquad(',
+    '2030': 'int CreateEnemySquad(spawnpoint, radius, sgo_leader, scale_leader, sgo_follower, count, scale_follower, active)',
+
+    '2100': 'set_generator?',
 
     '3100': 'SetAiRouteSpeed(int id, float speedfactor)',
     '3101': 'SetAiRoute(int ID, string path)',
     '3102': 'SetAiPath(int ID, string Path)',
+
+    '3200': 'MotherShipOpen?',
+    '3202': 'object_destroy?(int id)',
+
+    '4006': 'SetChatter(int id, bool CanTalk)',
+
+    '5100': 'SetEffectSnow(**)',
+    '5101': 'SetEffectRain(**)',
+    '5102': 'SetEffectDust(**)',
+    '5102': 'SetEffectFog(**)',
 
     '9000': 'CreateEventFactorWait(float TimeDelta)',
     '9001': 'CreateEventFactorTimer(int, float, TimeDelta)',
@@ -235,6 +252,7 @@ call_func_types = {
     '9100': 'CreateEventFactorAllEnemyDestroy(float delay)',
 
     "9110": "CreateEventFactorTeamObjectCount(int team, int count)",
+    '9111': 'createEventFactor_mothershipShieldCount?',
     "9112": "CreateEventFactorAreaTeamObjectCount(string ShapeNode, int team, int count)",
     "9113": "CreateEventFactorTeamBigObjectCount(int team, int count)",
     "9114": "CreateEventFactorTeamGeneratorObjectCount(int count)",
@@ -244,7 +262,8 @@ call_func_types = {
     "9121": "CreateEventFactorTeamNotEncount(int team)",
     "9144": "CreateEventFactorPlayerAreaCheck(string ShapeNode)",
 
-    '9201': "CreateEventFactorObjectDestroy(",
+    '9201': "CreateEventFactorObjectDestroy(id)",
+    '9202': "CreateEventFactorObjectDelete(id)",
 
     '9300': 'CreateEventFactorAiMoveEnd(',
     
