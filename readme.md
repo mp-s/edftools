@@ -11,8 +11,13 @@
 - RMPA:
     - RMPA -> json:  
     `python rmpa_parser.py "r:\test.rmpa"`   
+    - *json -> rmpa:*  
+    `python rmpa_parser.py "test-rmpa.json"`   
+        > *only "spawnpoints type" generated*  
+
 ### Target file are same path with source file.
-- _简易hex与浮点转换辅助_ &nbsp; **Chinese Only**:  
+ **Only Chinese Extra Tool:**
+- _简易hex与浮点转换辅助_ &nbsp;:    
     _双击打开 `simple_ieee754_float_convert.py`_  
 
 ## Thanks
