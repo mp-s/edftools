@@ -87,6 +87,9 @@ class BVMGenerate(object):
                 elif opcode == 'push':
                     operand_int = int(operand)
                     operand = operand_int.to_bytes(1, byteorder='little', signed=True)
+                elif opcode == 'push' and operand[-1] == 'f':
+                    operand_float = float(operand[:-1])
+                    operand = struct.pack('<f', operand_float)
                 else:
                     operand_int = int(operand)
                     operand = operand_int.to_bytes(1, byteorder='little')
