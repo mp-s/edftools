@@ -1,12 +1,12 @@
 //  全局变量名字定义
-name g_sergent    // 0
+name Func_1___Counter    // 0
 name g_sergent_follower1    // 1
 name g_sergent_follower2    // 2
 name g_sergent_follower3    // 3
 
 Mission::Mission:   // 全局变量的初始化
   push  0
-  storeabs  0    // g_sergent
+  storeabs  0    // Func_1___Counter
   push  1
   neg  0x00
   storeabs  1    // g_sergent_follower1
@@ -18,13 +18,151 @@ Mission::Mission:   // 全局变量的初始化
   storeabs  3    // g_sergent_follower3
   exit
 
+    // location_ 开头的跳转点皆为无名代码块, 不保存名称在bvm里
+    // Mission:: 开头为有名函数 一般为主函数及内部事件注册调用
+
+// =================================
+// 此处结构必须有 否则崩溃
+// 主函数入口
+Mission::Main:
+  call location_masin
+  exit
+// 有名函数入口
+Mission::Func_missionClear:    // Func_missionClear为事件注册用到的名字
+  call location_func1in
+  exit
+// 结束
+// =================================
+
+
+location_mainret:   // main函数的call调用返回块部分 
+  loadrel     0x00  // 与核心代码块头对应
+  addrel      0x02  // 与核心代码块头对应
+  ret
+
+location_masin:     // 主脚本核心
+  subrel      0x02  // 与ret代码块对应
+  storerel    0x00  // 与ret代码块对应
+  push        0
+  push        0
+  push        0
+  push        0
+  cuscall0    18    // pops four elements
+  push        0
+  call        location_88-EconomyMode   // EconomyMode
+  call        location_126-InitializeCommon  // InitializeCommon
+  cuscall0    10
+
+  // ==================
+  //    预读取不可变资源
+  pushstr     "app:/ui/lyt_HUiMissionCleared.sgo"
+  push        -1
+  cuscall0    13    // LoadResource(
+  pushstr     "app:/ui/lyt_HUiMissionFailed.sgo"
+  push        -1
+  cuscall0    13    // LoadResource(
+  pushstr     "app:/ui/lyt_HUiFailedResult.sgo"
+  push        -1
+  cuscall0    13    // LoadResource(
+      // ==============
+
+
+    //    预读取地图
+  pushstr     "app:/Map/NW_Henden.mac"
+  pushstr     "fine"
+  push        -1
+  cuscall0    14    // LoadMap(
+      // ==========
+
+      // 预读取物体sgo
+  pushstr     "app:/object/GIANTSPIDER01.SGO"
+  push        -1
+  cuscall0    13    // LoadResource(
+      // ------------
+
+
+  cuscall0    16
+  cuscall0    12    // WaitOnLoad(
+  cuscall0    10000
+  cuscall0    11
+  //  设置地图调用块
+  pushstr     "app:/Map/NW_Henden.mac"
+  pushstr     "fine"
+  cuscall0    100    // SetMap(
+      //  创建玩家实体
+  pushstr     "プレイヤー"
+  cuscall0    1000    // CreatePlayer(waypoint, 0);
+  //  播放bgm
+  pushstr     "BGM_E4S04_OnlineLobby"
+  cuscall0    300    // PlayBGM(
+      //  将实体放入地图种
+  pushstr     "プレイヤー"
+  push        0.0f
+  pushstr     "app:/object/GIANTSPIDER01.SGO"
+  push        120
+  push        0.01f
+  push        0
+  cuscall0    2002    // void CreateEnemyGroup(waypoint, radius, sgo_name, count, health_scale, has_aggro);
+
+    // 下一个命名函数跳转, 绑定事件
+  pushstr     "Func_missionClear"
+  push        110.0f
+  push        0
+  cuscall0    2    // void RegisterEvent(function_name, ?, multiple_functions_per_event(?));
+
+    // 注册事件
+  push        10.0f
+  cuscall0    9100    // CreateEventFactorAllEnemyDestroy
+
+  //  无条件跳转
+  jmp location_mainret
+
+    // 有名函数call调用返回块部分
+location_func1ret :
+  loadrel     0x00
+  addrel      0x01
+  ret
+    // 有名函数核心
+location_func1in:
+  subrel      0x01
+  storerel    0x00
+  loadabs     0    // Func_1___Counter
+  pushtop
+  inc         0x00
+  storeabs    0    // Func_1___Counter
+  pop
+  push        1
+  loadabs     0    // Func_1___Counter
+  push        1
+  testne      0x00
+  testnand    0x00
+  jmpf        location_905
+  jmp         location_func1ret
+
+
+location_905 :
+  push        1.0f
+  cuscall0    9
+  push        1
+  cuscall1    1    // Pop()
+  push        0
+  jmpne       location_920
+  jmp         location_func1ret
+
+location_920 :
+  call        location_missionclear  //  MissionClear  胜利
+  jmp         location_func1ret
+
+
+
+
 //  无需关心的代码块与代码跳转点, 通常为某作固定样式, 此块为edf5专有
-location_0 :
+location_voice2ret :
   loadrel     0x00
   addrel      0x03
   ret
 
-location_4 :
+location_4-Voice2 :
   subrel      0x03
   storerel    0x00
   storerel    0x02
@@ -34,38 +172,38 @@ location_4 :
   cuscall0    4002
   loadrel     0x02
   cuscall0    200    // Wait(
-  jmp         location_0
+  jmp         location_voice2ret
 
-location_25 :
+location_25_ret :
   loadrel     0x00
   addrel      0x01
   ret
 
-location_29 :
+location_29-RadioBegin :
   subrel      0x01
   storerel    0x00
   pushstr     "MusenBegin"
   cuscall0    4000
-  jmp         location_25
+  jmp         location_25_ret
 
-location_38 :
+location_38_ret :
   loadrel     0x00
   addrel      0x01
   ret
 
-location_42 :
+location_42-RadioEnd :
   subrel      0x01
   storerel    0x00
   pushstr     "MusenEnd"
   cuscall0    4000
-  jmp         location_38
+  jmp         location_38_ret
 
-location_52 :
+location_52_ret :
   loadrel     0x00
   addrel      0x03
   ret
 
-location_56 :
+location_56-RadioVoice :
   subrel      0x03
   storerel    0x00
   storerel    0x02
@@ -73,48 +211,48 @@ location_56 :
   cuscall0    4002
   loadrel     0x02
   cuscall0    200    // Wait(
-  call        location_29
+  call        location_29-RadioBegin
   loadrel     0x01
   cuscall0    4000
-  call        location_42
+  call        location_42-RadioEnd
   cuscall0    4002
-  jmp         location_52
+  jmp         location_52_ret
 
-location_84 :
+location_84ret :
   loadrel     0x00
   addrel      0x02
   ret
 
-location_88 :
+location_88-EconomyMode :
   subrel      0x02
   storerel    0x00
   storerel    0x01
   loadrel     0x01
   cuscall0    17
-  jmp         location_84
+  jmp         location_84ret
 
-location_103 :
+location_103-WaitAiMoveEnd :
   subrel      0x02
   storerel    0x00
   storerel    0x01
 
-location_122 :
+location_122ret :
   loadrel     0x00
   addrel      0x01
   ret
 
-location_126 :
+location_126-InitializeCommon :
   subrel      0x01
   storerel    0x00
   cuscall0    5
-  jmp         location_122
+  jmp         location_122ret
 
-location_133 :
+location_133ret :
   loadrel     0x00
   addrel      0x04
   ret
 
-location_137 :
+location_137-MissionClear_Common :
   subrel      0x04
   storerel    0x00
   storerel    0x01
@@ -145,9 +283,9 @@ location_150 :
   cuscall0    31
   push        1
   cuscall0    3
-  jmp         location_133
+  jmp         location_133ret
 
-location_196 :
+location_196ret :
   loadrel     0x00
   addrel      0x01
   ret
@@ -164,8 +302,8 @@ location_missionclear :
   pushstr     "Jingle_MissionCleared"
   cuscall0    300    // PlayBGM(
   push        6.0f
-  call        location_137
-  jmp         location_196
+  call        location_137-MissionClear_Common
+  jmp         location_196ret
 
 location_235 :
   loadrel     0x00
@@ -184,7 +322,7 @@ location_239 :
   pushstr     "Jingle_MissionClearedFinal"
   cuscall0    300    // PlayBGM(
   push        10.0f
-  call        location_137
+  call        location_137-MissionClear_Common
   jmp         location_235
 
 location_275 :
@@ -204,7 +342,7 @@ location_279 :
   pushstr     "Jingle_MissionEscape"
   cuscall0    300    // PlayBGM(
   push        7.0f
-  call        location_137
+  call        location_137-MissionClear_Common
   jmp         location_275
 
 location_315 :
@@ -432,143 +570,38 @@ location_750 :
   jmp         location_746
 
 
-location_mainret:   // main函数的call调用返回块部分 
-  loadrel     0x00
-  addrel      0x02
-  ret
-
-location_masin:     // 主脚本核心
-  subrel      0x02
-  storerel    0x00
-  push        0
-  push        0
-  push        0
-  push        0
-  cuscall0    18
-  push        0
-  call        location_88   // EconomyMode
-  call        location_126  // InitializeCommon
-  cuscall0    10
-  //    预读取不可变资源
-  pushstr     "app:/ui/lyt_HUiMissionCleared.sgo"
-  push        -1
-  cuscall0    13    // LoadResource(
-  pushstr     "app:/ui/lyt_HUiMissionFailed.sgo"
-  push        -1
-  cuscall0    13    // LoadResource(
-  pushstr     "app:/ui/lyt_HUiFailedResult.sgo"
-  push        -1
-  cuscall0    13    // LoadResource(
-    //    预读取地图
-  pushstr     "app:/Map/NW_Henden.mac"
-  pushstr     "fine"
-  push        -1
-  cuscall0    14    // LoadMap(
-      // 预读取物体sgo
-  pushstr     "app:/object/GIANTSPIDER01.SGO"
-  push        -1
-  cuscall0    13    // LoadResource(
-      // ------------
-  cuscall0    16
-  cuscall0    12    // WaitOnLoad(
-  cuscall0    10000
-  cuscall0    11
-  //  设置地图调用块
-  pushstr     "app:/Map/NW_Henden.mac"
-  pushstr     "fine"
-  cuscall0    100    // SetMap(
-      //  创建玩家实体
-  pushstr     "プレイヤー"
-  cuscall0    1000    // CreatePlayer(waypoint, 0);
-  //  播放bgm
-  pushstr     "BGM_inGame_Soutousen"
-  cuscall0    300    // PlayBGM(
-      //  将实体放入地图种
-  pushstr     "プレイヤー"
-  push        0.0f
-  pushstr     "app:/object/GIANTSPIDER01.SGO"
-  push        10
-  push        0.1f
-  push        0
-  cuscall0    2002    // void CreateEnemyGroup(waypoint, radius, sgo_name, count, health_scale, has_aggro);
-    // 下一个命名函数跳转, 绑定事件
-  pushstr     "Func_1"
-  push        110.0f
-  push        0
-  cuscall0    2    // void RegisterEvent(function_name, ?, multiple_functions_per_event(?));
-    // 注册事件
-  push        10.0f
-  cuscall0    9100    // CreateEventFactorAllEnemyDestroy
-  //  无条件跳转
-  jmp location_mainret
-
-    // 有名函数call调用返回块部分
-location_func1ret :
-  loadrel     0x00
-  addrel      0x01
-  ret
-    // 有名函数核心
-location_func1in:
-  subrel      0x01
-  storerel    0x00
-  loadabs     0    // Func_1___Counter
-  pushtop
-  inc         0x00
-  storeabs    0    // Func_1___Counter
-  pop
-  push        1
-  loadabs     0    // Func_1___Counter
-  push        1
-  testne      0x00
-  testnand    0x00
-  jmpf        location_905
-  jmp         location_func1ret
-
-
-location_905 :
-  push        1.0f
-  cuscall0    9
-  push        1
-  cuscall1    1    // Pop()
-  push        0
-  jmpne       location_920
-  jmp         location_func1ret
-
-location_920 :
-  call        location_missionclear  //  MissionClear  胜利
-  jmp         location_func1ret
 
  //  无需关心的代码块与代码跳转点, 通常为某作固定样式, 此块为edf5专有
 Voice2:   /- (string, float)
-  call        location_4
+  call        location_4-Voice2
   exit
 
 RadioBegin:   /- ()
-  call        location_29
+  call        location_29-RadioBegin
   exit
 
 RadioEnd:   /- ()
-  call        location_42
+  call        location_42-RadioEnd
   exit
 
 RadioVoice:   /- (string, float)
-  call        location_56
+  call        location_56-RadioVoice
   exit
 
 EconomyMode:   /- (int)
-  call        location_88
+  call        location_88-EconomyMode
   exit
 
 WaitAiMoveEnd:   /- (int)
-  call        location_103
+  call        location_103-WaitAiMoveEnd
   exit
 
 InitializeCommon:   /- ()
-  call        location_126
+  call        location_126-InitializeCommon
   exit
 
 MissionClear_Common:   /- (float)
-  call        location_137
+  call        location_137-MissionClear_Common
   exit
 
 MissionClear:   /- ()
@@ -607,11 +640,3 @@ SceneEffect_Fog:   /- (float, int, float, float, float, float)
   call        location_750
   exit
 
-    // 主函数入口
-Mission::Main:
-  call location_masin
-  exit
-    // 有名函数入口
-Mission::Func_1:
-  call location_func1in
-  exit

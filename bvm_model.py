@@ -223,16 +223,34 @@ call_func_types = {
     '2030': 'int CreateEnemySquad(spawnpoint, radius, sgo_leader, scale_leader, sgo_follower, count, scale_follower, active)',
 
     '2100': 'set_generator?',
-
+    '2101': 'set_generator_once?',
+    '3020': 'set_no_damage_time(float)?',
     '3100': 'SetAiRouteSpeed(int id, float speedfactor)',
     '3101': 'SetAiRoute(int ID, string path)',
     '3102': 'SetAiPath(int ID, string Path)',
+    '3103': 'NotOnPath?',
 
-    '3200': 'MotherShipOpen?',
+    '3200': 'set_object_stage?',
     '3202': 'object_destroy?(int id)',
 
     '4006': 'SetChatter(int id, bool CanTalk)',
 
+
+    # float Depth1, 
+    # float Depth2, 
+    # float EdgeRadius, 
+    # float DecalVeritality,
+    # float Progress,
+    # float DecalRed,
+    # float DecalGreen,
+    # float DecalBlue,
+    # float SpecularRed,
+    # float SpecularGreen,
+    # float SpecularBlue,
+    # float SpecularSize,
+    # int ParticleAmount,
+    # float ParticleDistance,
+    # float ParticleSpeed,
     '5100': 'SetEffectSnow(**)',
     '5101': 'SetEffectRain(**)',
     '5102': 'SetEffectDust(**)',
