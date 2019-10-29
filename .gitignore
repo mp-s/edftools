@@ -7,3 +7,4 @@ hello.py
 templates/index.html
 templates/uploaded.html
 /*.bvm
+/Document/*.bvm

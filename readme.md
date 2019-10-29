@@ -2,20 +2,22 @@
 
 ## Required: Python 3.6+
 
-## usage: ###   
-- BVM:
-    + BVM -> assembly script:  
-    `python bvm_decompiler.py "r:\mission.bvm"`   
-    + assembly script -> BVM:  
-    `python bvm_compiler.py "r:\test.asm"`  
-- RMPA:
-    - RMPA -> json:  
-    `python rmpa_parser.py "r:\test.rmpa"`   
-    - *json -> rmpa:*  
-    `python rmpa_builder.py "test-rmpa.json"`   
-        > **other types in json will crash**  
-        > *only "spawnpoints type" generated*  
-        > ***Recommended using sample-rmpa.json to generate***   
+## example: ##   
+- Command Prompt:
+    - BVM:
+        + BVM -> assembly script:  
+        `python bvm_decompiler.py "r:\mission.bvm"`   
+        + assembly script -> BVM:  
+        `python bvm_compiler.py "r:\test.asm"`  
+    - RMPA:
+        - RMPA -> json:  
+        `python rmpa_parser.py "r:\test.rmpa"`   
+        - *json -> rmpa:*  
+        `python rmpa_builder.py "test-rmpa.json"`   
+            > **other types in json will crash**  
+            > *only "spawnpoints type" generated*  
+            > ***Recommended using sample-rmpa.json to generate***   
+- If Windows has .py association, drag and drop supported
 
 ### Target file are same path with source file.
  **Only Chinese Extra Tool:**
