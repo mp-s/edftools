@@ -12,8 +12,10 @@
     - RMPA -> json:  
     `python rmpa_parser.py "r:\test.rmpa"`   
     - *json -> rmpa:*  
-    `python rmpa_parser.py "test-rmpa.json"`   
+    `python rmpa_builder.py "test-rmpa.json"`   
+        > **other types in json will crash**  
         > *only "spawnpoints type" generated*  
+        > ***Recommended using sample-rmpa.json to generate***   
 
 ### Target file are same path with source file.
  **Only Chinese Extra Tool:**

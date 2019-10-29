@@ -225,6 +225,7 @@ call_func_types = {
     '2100': 'set_generator?',
     '2101': 'set_generator_once?',
     '3020': 'set_no_damage_time(float)?',
+    '3021': 'set_no_damge_mode?',
     '3100': 'SetAiRouteSpeed(int id, float speedfactor)',
     '3101': 'SetAiRoute(int ID, string path)',
     '3102': 'SetAiPath(int ID, string Path)',
@@ -280,6 +281,7 @@ call_func_types = {
     "9121": "CreateEventFactorTeamNotEncount(int team)",
     "9144": "CreateEventFactorPlayerAreaCheck(string ShapeNode)",
 
+    '9200': 'Create_event_factor_object_hp_remain_percent?(id)',
     '9201': "CreateEventFactorObjectDestroy(id)",
     '9202': "CreateEventFactorObjectDelete(id)",
 
