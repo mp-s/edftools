@@ -48,7 +48,7 @@
 - all enemy destroy factor
 ```cpp
   push        10.0f
-  cuscall0    9100    // CreateEventFactorAllEnemyDestroy
+  cuscall0    9100    // CreateEventFactorAllEnemyDestroy(float delay)
 ```
 
 - game difficulty
@@ -68,12 +68,13 @@ if (getDifficulty() < 3)
 - creat friend npc1
 ```? g_sergent = CreateFriend(float, str, str, int) ?```  
 ```c
-  push        41    // global var? = g_sergent
+  push        41    // g_sergent
   pushstr     "小隊01"
   pushstr     "app:/object/AiArmySoldier_S_AF_Leader.sgo"
   push        0.6000000238418579f
   push        0
   cuscall0    1010    // int CreateFriend(float, wchar_t*, wchar_t*, bool);
+  store           // g_sergent = returned int
 ```
 
 - follower?
@@ -82,6 +83,7 @@ if (getDifficulty() < 3)
   loadabs     41    // g_sergent
   push        0
   cuscall0    3400
+  store             // 
 ```
 
 - respawn available ?
@@ -98,7 +100,8 @@ if (getDifficulty() < 3)
   pushstr     "app:/object/e505_generator.sgo"
   push        1.0f
   push        1
-  cuscall0    2001
+  cuscall0    2001  // int CreateEnemy2(spawnpoint, sgo, scale, active)
+  store             // global_var_47 = returned int
 ```
 
 - generator object
@@ -111,19 +114,19 @@ if (getDifficulty() < 3)
   push        0.5f
   push        5.0f
   push        0
-  cuscall0    2100
+  cuscall0    2100    // SetGenerator(int id, int, str sgo, int amount, float hpScale, float rate, float interval, bool)
 ```
 
 - object move
 ```c
   loadabs     41    // g_sergent
   pushstr     "小隊移動ルート2"
-  cuscall0    3101    // SetAiRoute(
+  cuscall0    3101    // SetAiRoute(int ID, string path)
 ```
 
 - object route speed
 ```c
   loadabs     60    // carrier02
   push        0.41999998688697815f
-  cuscall0    3100    // SetAiRouteSpeed(
+  cuscall0    3100    // SetAiRouteSpeed(int id, float speedfactor)
 ```

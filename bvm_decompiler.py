@@ -137,7 +137,8 @@ class BvmData:
                 elif opcode_asm in operands_use_uint:    # all int
                     operand_str = str(self._get_int(operand))
                     # 添加注释
-                    comments = call_func_types.get(operand_str, None)
+                    if opcode_asm == 'cuscall0':
+                        comments = call_func_types.get(operand_str, None)
                 elif opcode_asm in operands_use_offset:
                     operand_int = int(self._convert_operand(operand, operand_len))
                     mark_offset = _opcode_offset + operand_int
@@ -170,7 +171,9 @@ class BvmData:
                     elif 'testz' == opcode_asm:
                         comments = 'pop B, push !B'
                     elif 'cvtstore' == opcode_asm:
-                        comments = 'pop B, pop A, *A=B, push B'
+                        comments = 'pop B, pop A, *A=B, push B --- 0x01(B is float), 0x02(A is float), 0x03(A and B both float)'
+                    elif 'store' == opcode_asm:
+                        comments = 'pop B, pop A, *A=B'
                     else:
                         pass
                 

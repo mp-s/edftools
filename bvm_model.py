@@ -141,7 +141,7 @@ func_arg_types = {
 
 call_func_types = {
     '1': 'Pop()',
-    '2': 'void RegisterEvent(function_name, ?, multiple_functions_per_event(?));',
+    '2': 'void RegisterEvent(function_name, float, multiple_functions_per_event(?));',
     '12': "CheckResourcesLoaded()",
     '13': 'LoadResource(string resource, int)',
     "14": "LoadMapResource(string map, string weather, int)",
@@ -155,7 +155,7 @@ call_func_types = {
     '44': 'void SoundController::PlayBgm(soundname);',
     '45': 'FadeOutBGM(timeDelta);',
     '46': 'FadeInBGM(soundname, timeDelta);',
-    '50': 'FadeUiElement?(int id, int fadeType, float time)',
+    '50': 'FadeUiElement??(int id, int fadeType, float time)',
     '51': 'WaitForUiFade(int id)',
     '66': 'VsStartPosition(SpawnPrefix)',
     '80': 'RecruitObject(int leader, int follower)',
@@ -191,9 +191,9 @@ call_func_types = {
     '356': 'SetAiObjectDirectionPoint(int, str, float, bool)',
     '421': 'LookCameraToArea(sphereShape, time)',
 
-    '1000': 'CreatePlayer(waypoint);',
-    '1001': 'CreatePlayer2(waypoint);  will crash',
-    '1002': 'CreatePlayer3(waypoint);  will crash',
+    '1000': 'CreatePlayer(spawnpoint);',
+    '1001': 'CreatePlayer2(spawnpoint);  will crash',
+    '1002': 'CreatePlayer3(spawnpoint);  will crash',
     '1003': 'int GetPlayerCount(void) ',
     '1005': 'int loc_140117223(int);',
     '1006': 'void loc_140117304(int, int, int);',
@@ -208,9 +208,9 @@ call_func_types = {
 
     '2000': 'int CreateEnemy(spawnpoint, sgo, scale, active)',
     '2001': 'int CreateEnemy2(spawnpoint, sgo, scale, active)',
-    '2002': 'void CreateEnemyGroup(waypoint, radius, sgo_name, count, health_scale, has_aggro);',
-    '2003': 'void CreateEnemyGroup2(waypoint, radius, sgo_name, count, health_scale, has_aggro);',
-    '2004': 'create_enemy_spawn_ground(spawnpoint, radius, sgo, count, scale, active, time)',
+    '2002': 'void CreateEnemyGroup(spawnpoint, radius, sgo_name, count, health_scale, has_aggro);',
+    '2003': 'void CreateEnemyGroup2(spawnpoint, radius, sgo_name, count, health_scale, has_aggro);',
+    '2004': '5:CreateEnemyGroupGround(spawnpoint, radius, sgo, count, scale, active, time) 4.1:CreateFlyingEnemyGroup_Area(shapeNode, sgo, count, scale, active)',
     '2005': 'CreateEnemyGroupGround2(spawnpoint, radius, sgo, count, scale, active, time)',
     '2006': 'CreateFlyingEnemyGroup_Area(shapeNode, sgo, count, scale, active)',
     '2007': 'CreateFlyingEnemyGroup_AreaRoute(shapeNode, routeNode, sgo, count, scale, active)',
@@ -222,21 +222,24 @@ call_func_types = {
     '2023': 'int CreateEnemy3(string spawnpoint, string sgo_name, float hpScale, bool active)',
     '2030': 'int CreateEnemySquad(spawnpoint, radius, sgo_leader, scale_leader, sgo_follower, count, scale_follower, active)',
 
-    '2100': 'set_generator?',
-    '2101': 'set_generator_once?',
-    '3020': 'set_no_damage_time(float)?',
-    '3021': 'set_no_damge_mode?',
+    '2100': 'SetGenerator(int id, int, str sgo, int amount, float hpScale, float rate, float interval, bool)',
+    '2101': 'set_generator_once??',
+    '3020': 'SetNoDamageWhenHPRemain(float HPRemain)',
+    '3021': 'set_no_damge_mode??(bool)',
+    '3026': 'set_can_respawn??(int id, bool)',
     '3100': 'SetAiRouteSpeed(int id, float speedfactor)',
     '3101': 'SetAiRoute(int ID, string path)',
     '3102': 'SetAiPath(int ID, string Path)',
-    '3103': 'NotOnPath?',
+    '3103': 'NotOnPath??',
 
-    '3200': 'set_object_stage?',
-    '3202': 'object_destroy?(int id)',
+    '3200': 'set_object_stage??',
+    '3202': 'object_destroy??(int id)',
+    '3400': 'int set_follower??(int id, int No.)',
 
     '4006': 'SetChatter(int id, bool CanTalk)',
 
-
+    '5013': 'unknown??',
+    '5014': 'light object??(int, float, float)',
     # float Depth1, 
     # float Depth2, 
     # float EdgeRadius, 
@@ -255,7 +258,7 @@ call_func_types = {
     '5100': 'SetEffectSnow(**)',
     '5101': 'SetEffectRain(**)',
     '5102': 'SetEffectDust(**)',
-    '5102': 'SetEffectFog(**)',
+    '5103': 'SetEffectFog(**)',
 
     '9000': 'CreateEventFactorWait(float TimeDelta)',
     '9001': 'CreateEventFactorTimer(int, float, TimeDelta)',
@@ -271,7 +274,7 @@ call_func_types = {
     '9100': 'CreateEventFactorAllEnemyDestroy(float delay)',
 
     "9110": "CreateEventFactorTeamObjectCount(int team, int count)",
-    '9111': 'createEventFactor_mothershipShieldCount?',
+    '9111': 'createEventFactor_mothershipShieldCount??',
     "9112": "CreateEventFactorAreaTeamObjectCount(string ShapeNode, int team, int count)",
     "9113": "CreateEventFactorTeamBigObjectCount(int team, int count)",
     "9114": "CreateEventFactorTeamGeneratorObjectCount(int count)",
@@ -281,7 +284,7 @@ call_func_types = {
     "9121": "CreateEventFactorTeamNotEncount(int team)",
     "9144": "CreateEventFactorPlayerAreaCheck(string ShapeNode)",
 
-    '9200': 'Create_event_factor_object_hp_remain_percent?(id)',
+    '9200': 'Create_event_factor_object_hp_remain_percent??(id)',
     '9201': "CreateEventFactorObjectDestroy(id)",
     '9202': "CreateEventFactorObjectDelete(id)",
 
