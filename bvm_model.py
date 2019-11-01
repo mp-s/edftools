@@ -142,9 +142,11 @@ func_arg_types = {
 call_func_types = {
     '1': 'Pop()',
     '2': 'void RegisterEvent(function_name, float, multiple_functions_per_event(?));',
+    '5': 'Initialize_Common??',
     '12': "CheckResourcesLoaded()",
     '13': 'LoadResource(string resource, int)',
     "14": "LoadMapResource(string map, string weather, int)",
+    '17': 'Economy_Mode_func??',
     '18': 'pops four elements',
     '21': 'int GetDifficulty()',
 
@@ -185,11 +187,16 @@ call_func_types = {
     '287': 'ObjectNotOnRoute(int id)',
     '288': 'CreateExplosion(spawnpoint, SizeDuration, quakeScale)',
     '289': 'CreateQuake(spawnpoint, SizeDuration, quakeScale)',
-    '300': 'PlayBGM(',
+    '300': 'PlayBGM(str SongName)',
+    '301': 'FadeOutBGM(float TimeDelta)',
+    '302': 'FadeInBGM(str SongName, float TimeDelta)',
     '308': 'SetGenerator(int id, int, sgo, int amount,float scale, float rate, float interval, bool)',
     '350': 'PlayPresetSE(str SoundPreset)',
     '356': 'SetAiObjectDirectionPoint(int, str, float, bool)',
     '421': 'LookCameraToArea(sphereShape, time)',
+
+    '900': 'create_Citizen??(str, float)',
+    '902': 'set_citizen_route??(str, int, float, float)',
 
     '1000': 'CreatePlayer(spawnpoint);',
     '1001': 'CreatePlayer2(spawnpoint);  will crash',
@@ -224,7 +231,7 @@ call_func_types = {
 
     '2100': 'SetGenerator(int id, int, str sgo, int amount, float hpScale, float rate, float interval, bool)',
     '2101': 'set_generator_once??',
-    '3020': 'SetNoDamageWhenHPRemain(float HPRemain)',
+    '3020': 'SetNoDamageWhenHPRemain(int id, float HPRemain)',
     '3021': 'set_no_damge_mode??(bool)',
     '3026': 'set_can_respawn??(int id, bool)',
     '3100': 'SetAiRouteSpeed(int id, float speedfactor)',
@@ -236,7 +243,10 @@ call_func_types = {
     '3202': 'object_destroy??(int id)',
     '3400': 'int set_follower??(int id, int No.)',
 
+    '4000': 'play_sound??(str)',
     '4006': 'SetChatter(int id, bool CanTalk)',
+    '4102': 'unknown??(int, str, str, float)',
+    '4120': 'unknown??(int, str)',
 
     '5013': 'unknown??',
     '5014': 'light object??(int, float, float)',
@@ -284,13 +294,19 @@ call_func_types = {
     "9121": "CreateEventFactorTeamNotEncount(int team)",
     "9144": "CreateEventFactorPlayerAreaCheck(string ShapeNode)",
 
-    '9200': 'Create_event_factor_object_hp_remain_percent??(id)',
+    '9200': 'Create_event_factor_object_hp_remain_percent??(id, hpPercent)',
     '9201': "CreateEventFactorObjectDestroy(id)",
     '9202': "CreateEventFactorObjectDelete(id)",
 
     '9300': 'CreateEventFactorAiMoveEnd(',
+    '9301': 'CreateEventFactorAiMove??(id)',
     
     '9400': "CreateEventPlayerAreaCheck(",
+}
+
+call2_comments = {
+    '0': 'yield?',
+    '2': 'async?',
 }
 
 # compiler
