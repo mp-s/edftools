@@ -174,6 +174,8 @@ class BvmData:
                         comments = 'pop B, pop A, *A=B, push B --- 0x01(B is float), 0x02(A is float), 0x03(A and B both float)'
                     elif 'store' == opcode_asm:
                         comments = 'pop B, pop A, *A=B'
+                    elif 'rel' in opcode_asm:
+                        comments = f'  Local variable 0x{_}  '
                     else:
                         pass
                 

@@ -202,7 +202,7 @@ call_func_types = {
     '1001': 'CreatePlayer2(spawnpoint);  will crash',
     '1002': 'CreatePlayer3(spawnpoint);  will crash',
     '1003': 'int GetPlayerCount(void) ',
-    '1005': 'int loc_140117223(int);',
+    '1005': 'int GetOfflinePlayerClass(int 0);',
     '1006': 'void loc_140117304(int, int, int);',
     '1007': 'void loc_1401173CB(int, int);',
     '1010': 'int CreateFriend(spawnpoint, sgo, scale, canRecruit);',

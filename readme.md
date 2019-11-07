@@ -17,7 +17,7 @@
             > **other types in json will crash**  
             > *only "spawnpoints type" generated*  
             > ***Recommended using sample-rmpa.json to generate***   
-- If Windows has .py association, drag and drop supported
+- If Windows has a Python interpreter associated with .py, drag and drop supported
 
 ### Target file are same path with source file.
  **Only Chinese Extra Tool:**
