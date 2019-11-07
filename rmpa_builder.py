@@ -379,7 +379,7 @@ def main():
     if len(sys.argv) == 3:
         output_path = sys.argv[2]
     else:
-        output_path = f'{_sp[0]}test.rmpa'
+        output_path = f'{_sp[0]}.rmpa'
 
     if '.json' == _sp[1].lower():
         print('working..')

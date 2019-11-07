@@ -1,4 +1,25 @@
 {
+  "shape": {
+    "type group name": "",
+    "sub groups": [
+      {
+        "sub group name": "ufo",
+        "base data": [
+          {
+            "shape type name": "Cylinder",
+            "shape var name": "ufo01",
+            "shape positions data": [
+              172.90692138671875, 21.594253540039062, -140.34335327148438,
+              0.0, 0.0, 0.0,
+              0.0,
+              0.0,
+              150.0, 150.0
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "spawnpoint": {
     "type group name": "",
     "sub groups": [
