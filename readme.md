@@ -1,4 +1,4 @@
-# Python ported EDF Tools
+# EDF's modding Tools
 
 ## Required: Python 3.6+
 
@@ -6,18 +6,26 @@
 - Command Prompt:
     - BVM:
         + BVM -> assembly script:  
-        `python bvm_decompiler.py "r:\mission.bvm"`   
+        using interpreter: `python bvm_decompiler.py "r:\mission.bvm"`   
+        using launcher: `py -3 bvm_decompiler.py "r:\mission.bvm"`   
         + assembly script -> BVM:  
-        `python bvm_compiler.py "r:\test.asm"`  
+        using interpreter: `python bvm_compiler.py "r:\test.asm"`  
+        using launcher: `py -3 bvm_compiler.py "r:\test.asm"`  
     - RMPA:
         - RMPA -> json:  
-        `python rmpa_parser.py "r:\test.rmpa"`   
+        using interpreter: `python rmpa_parser.py "r:\test.rmpa"`   
+        using launcher: `py -3 rmpa_parser.py "r:\test.rmpa"`   
         - *json -> rmpa:*  
-        `python rmpa_builder.py "test-rmpa.json"`   
+        using interpreter: `python rmpa_builder.py "test-rmpa.json"`   
+        using launcher: `py -3 rmpa_builder.py "test-rmpa.json"`   
             > **other types in json will crash**  
-            > *only "spawnpoints type" generated*  
+            > *only "shapes type" and "spawnpoints type" generated*  
             > ***Recommended using sample-rmpa.json to generate***   
-- If Windows has a Python interpreter associated with .py, drag and drop supported
+    - AWE:
+        - using "VGMToolbox" AWB Archive extractor, get extracted directory
+        - then run "awe_parse.py", follow the prompts.
+- If Windows has a Python interpreter associated with .py, drag and drop supported.  
+
 
 ### Target file are same path with source file.
  **Only Chinese Extra Tool:**
