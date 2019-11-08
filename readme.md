@@ -21,15 +21,16 @@
             > **other types in json will crash**  
             > *only "shapes type" and "spawnpoints type" generated*  
             > ***Recommended using sample-rmpa.json to generate***   
-    - AWE:
-        - using "VGMToolbox" AWB Archive extractor, get extracted directory
-        - then run "awe_parse.py", follow the prompts.
 - If Windows has a Python interpreter associated with .py, drag and drop supported.  
 
 
 ### Target file are same path with source file.
- **Only Chinese Extra Tool:**
-- _简易hex与浮点转换辅助_ &nbsp;:    
+ **Extra Tool:**
+- AWE:
+    - using "VGMToolbox" AWB Archive extractor, get extracted directory
+    - then run "awe_parse.py", follow the prompts.
+
+- Only Chinese: _简易hex与浮点转换辅助_ &nbsp;:    
     _双击打开 `simple_ieee754_float_convert.py`_  
 
 ## Thanks
