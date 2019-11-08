@@ -30,6 +30,12 @@
     - using "VGMToolbox" AWB Archive extractor, get extracted directory
     - then run "awe_parse.py", follow the prompts.
 
+- Assisted coordinates mods:
+    - **Cheat Table Required: Cheat Engine 7.0+**
+    - ``` edf5-coordinates-test-github-public.zip ```  
+    - ``` edf41-coordinates-test-github-public.zip ```  
+        - test Missions list Assisted by AUK233
+
 - Only Chinese: _简易hex与浮点转换辅助_ &nbsp;:    
     _双击打开 `simple_ieee754_float_convert.py`_  
 
