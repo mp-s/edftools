@@ -187,15 +187,17 @@ class RMPAParse:
         rectangle_x = self._get_4bytes_to_float(0x10, bytes_)
         rectangle_y = self._get_4bytes_to_float(0x14, bytes_)
         rectangle_z = self._get_4bytes_to_float(0x18, bytes_)
+
         sphere_diameter = self._get_4bytes_to_float(0x20, bytes_)
         retangele_extra = self._get_4bytes_to_float(0x24, bytes_)
-        cylinder_1 = self._get_4bytes_to_float(0x30, bytes_)
-        cylinder_2 = self._get_4bytes_to_float(0x34, bytes_)
+        
+        cylinder_diameter = self._get_4bytes_to_float(0x30, bytes_)
+        cylinder_height = self._get_4bytes_to_float(0x34, bytes_)
         _lst = [
             pos_x, pos_y, pos_z,
             rectangle_x, rectangle_y, rectangle_z,
             sphere_diameter, retangele_extra,
-            cylinder_1, cylinder_2,
+            cylinder_diameter, cylinder_height,
         ]
         return _lst
 
