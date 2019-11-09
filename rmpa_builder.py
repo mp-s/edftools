@@ -274,41 +274,6 @@ class RMPAJsonPreprocess:
         type_block_size = type_header_size + sub_header_size + sub_data_size
         return type_block_size
 
-    def __Deprecated_type_block_size_predict(self, type_name:str, type_group_data:dict) -> int:
-        '''type header size + sub groups size + base datas size'''
-        # type_header_size = 0x20
-
-        sub_groups_data_list = type_group_data.get('sub groups', None)
-        if not sub_groups_data_list:
-            print('error')
-            return 0
-        sub_group_counts = len(sub_groups_data_list)
-
-        sub_groups_header_size = sub_group_counts * 0x20
-
-        sub_group_size_list = []
-        for sub_group in sub_groups_data_list:
-            sub_group_size_list.append(
-                self._sub_block_size_predict(type_name, sub_group)
-            )
-
-        sub_groups_data_size = sum(sub_group_size_list)
-        
-        type_block_size = 0x20 + sub_groups_header_size + sub_groups_data_size
-        return type_block_size
-
-    def _sub_block_size_predict(self, type_name:str, base_group_data:dict) -> int:
-        if not base_group_data:
-            return 0
-        list_ = base_group_data.get('base data')
-        base_data_counts = len(list_)
-        sub_block_size = 0
-        if type_name == 'spawnpoint':
-            sub_block_size = base_data_counts * 0x40
-        elif type_name == 'shape':
-            sub_block_size = base_data_counts * (0x40 + 0x30)
-        return sub_block_size
-
     def abs_str_tbl(self) -> dict:
         append_pos = self._name_pos_prediction()
         d_ = {k:v+append_pos for k,v in self._name_str_tbl.items()}
