@@ -332,10 +332,13 @@ call_func_types = {
     '9200': 'Create_event_factor_object_hp_remain_percent??(id, hpPercent)',
     '9201': "CreateEventFactorObjectDestroy(id)",
     '9202': "CreateEventFactorObjectDelete(id)",
+    '9203': "4.1: CreateEventFactorTeamEncount(int)",
+    '9204': "create_event_factor_object_alive_or_active??(int id)",
+    '9205': 'create_event_facor_object_used??(int id)',
 
     '9300': 'CreateEventFactorAiMoveEnd(int ID)',
     '9301': 'CreateEventFactorAiMoveEndOrDie(int id)',
-    '9310': 'CreateEventFactorAiFollow(int Soldier)',
+    '9310': 'CreateEventFactorAiFollow(int Soldier_ID)',
     '9400': "CreateEventFactorPlayerAreaCheck(string ShapeNode)",
 }
 
