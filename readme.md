@@ -2,30 +2,29 @@
 
 ## Required: Python 3.6+
 
-## example: ##   
+### Usage: ##   
+- If Windows has a Python interpreter associated with .py, drag and drop supported.  
 - Command Prompt:
+    - using interpreter: `python <foo.py> <infile> [outfile]`
+    - using launcher: `py -3 <foo.py> <infile> [outfile]`
+- Example:
     - BVM:
         + BVM -> assembly script:  
-        using interpreter: `python bvm_decompiler.py "r:\mission.bvm"`   
-        using launcher: `py -3 bvm_decompiler.py "r:\mission.bvm"`   
+        `python bvm_decompiler.py "mission.bvm"`   
         + assembly script -> BVM:  
-        using interpreter: `python bvm_compiler.py "r:\test.asm"`  
-        using launcher: `py -3 bvm_compiler.py "r:\test.asm"`  
+         `python bvm_compiler.py "test.asm"`  
     - RMPA:
         - RMPA -> json:  
-        using interpreter: `python rmpa_parser.py "r:\test.rmpa"`   
-        using launcher: `py -3 rmpa_parser.py "r:\test.rmpa"`   
-        - *json -> rmpa:*  
-        using interpreter: `python rmpa_builder.py "test-rmpa.json"`   
-        using launcher: `py -3 rmpa_builder.py "test-rmpa.json"`   
-            > **other types in json will crash**  
-            > *only "shapes type" and "spawnpoints type" generated*  
-            > ***Recommended using sample-rmpa.json to generate***   
-- If Windows has a Python interpreter associated with .py, drag and drop supported.  
-
-
-### Target file are same path with source file.
- **Extra Tool:**
+         `python rmpa_parser.py "test.rmpa"`   
+        - json -> RMPA:  
+         `python rmpa_builder.py "test-rmpa.json"`   
+            - *supported:`"route type"`  ` "shape type"`  ` "spawnpoint type"`   
+            - *camera type in json will ignore*  
+            - *Recommended using sample-rmpa.json to generate*   
+    - Target file are same path with source file.
+  
+  
+### Extra Tool:
 - AWE:
     - using "VGMToolbox" AWB Archive extractor, get extracted directory
     - then run "awe_parse.py", follow the prompts.
@@ -34,9 +33,11 @@
     - **Cheat Table Required: Cheat Engine 7.0+**
     - ``` edf5-coordinates-test-github-public.zip ```  
     - ``` edf41-coordinates-test-github-public.zip ```  
-        - test Missions list Assisted by AUK233
+        - test Missions list Assisted by AUK233  
+  
+- more Documents in Documents/  
 
-- Only Chinese: _简易hex与浮点转换辅助_ &nbsp;:    
+- Chinese Only: _简易hex与浮点转换辅助_ &nbsp;:    
     _双击打开 `simple_ieee754_float_convert.py`_  
 
 ## Thanks
