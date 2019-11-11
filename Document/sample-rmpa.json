@@ -9,8 +9,12 @@
             "name": "旧小隊01ルート1",
             "positions": [-882.570556640625, 11.460774421691895, -515.981201171875],
             "rmpa_float_WayPointWidth": -1.0,
+            "comments_rmpa_float_WayPointWidth": "必须是数字, 不存在时使用带双引号的False",
+            "comments_rmpa_float_WayPointWidthEN": "Numbers Only, if unused this number, paste 'Double quotes False'.",
             "route number": 0,
-            "current->next number": [5, 2]
+            "current->next number": [5, 2],
+            "comments_next_number": "里面放的是下个路径编号数据列表.",
+            "comments_next_numberEN": "next waypoint numbers list."
           },
           {
             "name": "名無し",
@@ -169,6 +173,7 @@
         "base data": [
           {
             "shape type name": "Cylinder",
+            "Shpe_type_comments": "Case Sensitive Using: Cylinder, Sphere, Rectangle",
             "shape var name": "ufo01",
             "shape positions data": [
               172.90692138671875, 21.594253540039062, -140.34335327148438,
@@ -176,7 +181,10 @@
               0.0,
               0.0,
               150.0, 150.0
-            ]
+            ],
+            "shape_pos_comments": "center? x,y,z, length x,y,z,",
+            "shape_pos_comments2": "0.0, Rectangle unknown?",
+            "Shape_pos_comments3": "Cylinder/Sphere diameter, cylinder height"
           },
           {
             "shape type name": "Sphere",
