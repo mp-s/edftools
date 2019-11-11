@@ -40,6 +40,8 @@ def additional_jmp_comments(file_data:List[str]):
                 line = line + '   // ' + comments + '\n'
             else:
                 line = line + '\n'
+        elif 'cuscall' in line or 'store' in line:
+            line += '\n'
         return line
     final_data = list(map(map_comments, file_data))
     return final_data
