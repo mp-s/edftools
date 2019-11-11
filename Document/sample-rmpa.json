@@ -1,4 +1,166 @@
 {
+  "route": {
+    "type group name": "",
+    "sub groups": [
+      {
+        "sub group name": "小隊01",
+        "base data": [
+          {
+            "name": "旧小隊01ルート1",
+            "positions": [-882.570556640625, 11.460774421691895, -515.981201171875],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 0,
+            "current->next number": [5, 2]
+          },
+          {
+            "name": "名無し",
+            "positions": [-744.50439453125, 44.809478759765625, -213.06134033203125],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 1,
+            "current->next number": [3, 4]
+          },
+          {
+            "name": "名無し",
+            "positions": [
+              -873.5757446289062, 7.955313205718994, -436.73614501953125
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 2,
+            "current->next number": [
+              0, 3
+            ]
+          },
+          {
+            "name": "名無し",
+            "positions": [
+              -827.1873779296875,
+              8.995530128479004,
+              -360.4690246582031
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 3,
+            "current->next number": [
+              1,
+              2
+            ]
+          },
+          {
+            "name": "名無し",
+            "positions": [
+              -748.4446411132812,
+              56.40105438232422,
+              -153.74696350097656
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 4,
+            "current->next number": [
+              1
+            ]
+          },
+          {
+            "name": "小隊01ルート1",
+            "positions": [
+              -842.8159790039062,
+              8.1103515625,
+              -582.5291748046875
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 5,
+            "current->next number": [
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "sub group name": "小隊02ルート",
+        "base data": [
+          {
+            "name": "旧小隊02ルート1",
+            "positions": [
+              -872.7969970703125,
+              8.13915729522705,
+              -488.7619934082031
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 0,
+            "current->next number": [
+              1,
+              5
+            ]
+          },
+          {
+            "name": "名無し",
+            "positions": [
+              -858.9456787109375,
+              8.913728713989258,
+              -403.1073913574219
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 1,
+            "current->next number": [
+              0,
+              2
+            ]
+          },
+          {
+            "name": "名無し",
+            "positions": [
+              -833.501220703125,
+              12.48306655883789,
+              -308.5091247558594
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 2,
+            "current->next number": [
+              1,
+              3
+            ]
+          },
+          {
+            "name": "名無し",
+            "positions": [
+              -717.8078002929688,
+              42.36960220336914,
+              -218.84117126464844
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 3,
+            "current->next number": [
+              2,
+              4
+            ]
+          },
+          {
+            "name": "名無し",
+            "positions": [
+              -725.8673095703125,
+              47.573570251464844,
+              -175.419677734375
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 4,
+            "current->next number": [
+              3
+            ]
+          },
+          {
+            "name": "小隊02ルート1",
+            "positions": [
+              -834.515625,
+              7.934569835662842,
+              -566.9660034179688
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "route number": 5,
+            "current->next number": [
+              0
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "shape": {
     "type group name": "",
     "sub groups": [

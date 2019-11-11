@@ -20,7 +20,8 @@ class RMPAGenerate:
         type_group_header_abs_position = self._get_type_header_abs_pos(type_name)
         sub_groups = type_dict.get('sub groups')
         sub_groups_count = len(sub_groups)
-
+        if sub_groups_count == 0:
+            return b''
         type_header_block_bytes = self._build_type_header_block(
                 type_group_name, sub_groups_count, type_group_header_abs_position)
         # sub_groups_start_position = 0x20
@@ -281,10 +282,13 @@ class RMPAGenerate:
             k = _t_n
             v = self._data_dict.get(_t_n)
             some_header_pos.append(some_header_start_pos)
-            if v is None:
+            if v is None or k == 'camera':
                 some_flags.append(0)
                 continue
             block_bytes = self._build_type_block(k, v)
+            if len(block_bytes) == 0:
+                some_flags.append(0)
+                continue
             some_bytes += block_bytes
             some_flags.append(1)
             # some_header_pos.append(some_header_start_pos)
@@ -462,7 +466,7 @@ def main():
     if len(sys.argv) == 3:
         output_path = sys.argv[2]
     else:
-        output_path = f'{_sp[0]}-test.rmpa'
+        output_path = f'{_sp[0]}.rmpa'
 
     if '.json' == _sp[1].lower():
         print('working..')
