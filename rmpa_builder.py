@@ -28,6 +28,7 @@ class RMPAGenerate:
         sub_groups_header_bytes_list = []
         sub_group_datas_bytes_list = []
         sub_groups_abs_start_pos = type_group_header_abs_position + 0x20      # 多type时非固定
+        base_data_latest_filling_size = 0
         for index, sub_group_item in enumerate(sub_groups):
             # self._build_sub_header()
             # 需要知道自己位置
@@ -43,18 +44,18 @@ class RMPAGenerate:
             remain_sub_groups_size = remain_sub_groups_count * 0x20
             before_groups_count = sum(self.pre.base_data_count_table.get(type_name)[:index]) # spawnpoint
             single_data_block_size = 0
-            if type_name == 'spawnpoint':
-                single_data_block_size = 0x40
-                _fn = self._build_spawnpoint_block
-            elif type_name == 'shape':
-                single_data_block_size = 0x70
-                _fn = self._build_shape_block
-            before_base_data_groups_size = single_data_block_size * before_groups_count
-            self_data_blk_pos = remain_sub_groups_size + before_base_data_groups_size
+            # if type_name == 'spawnpoint':
+            #     single_data_block_size = 0x40
+            # elif type_name == 'shape':
+            #     single_data_block_size = 0x70
+            # before_base_data_groups_size = single_data_block_size * before_groups_count
+            before_base_data_groups_size = 0
+            self_data_blk_pos = remain_sub_groups_size + base_data_latest_filling_size
 
             sub_groups_header_bytes_list.append(
                 b''.join([
-                    bytes(0x14),
+                    b'\x00\x01',
+                    bytes(0x12),
                     int_to_4bytes(_2_name_pos_int),
                     int_to_4bytes(base_item_count),
                     int_to_4bytes(self_data_blk_pos),
@@ -64,11 +65,7 @@ class RMPAGenerate:
             base_data_abs_start_pos = self_head_abs_pos + self_data_blk_pos
             _b = self._build_sub_group_base_block_data(type_name, base_data_abs_start_pos, base_groups_list)
             sub_group_datas_bytes_list.append(_b)
-            # for index, base_item in enumerate(base_groups_list):
-            #     if _fn:
-            #         sub_group_datas_bytes_list.append(_fn(
-            #                 base_item,
-            #                 base_data_abs_start_pos + index * single_data_block_size))
+            base_data_latest_filling_size += len(_b)
 
         _xx = [type_header_block_bytes]
         _xx.extend(sub_groups_header_bytes_list)
@@ -160,7 +157,7 @@ class RMPAGenerate:
             for index, base_data_table in enumerate(base_data_list):
                 block_start_pos = group_start_pos + 0x40 * index
                 _main_group_data_list.append(self._build_spawnpoint_block(base_data_table, block_start_pos))
-            return b''.join(_main_group_data_list)
+            # return b''.join(_main_group_data_list)
         elif type_name == 'shape':
             shape_size_start_pos = 0x30 * len(base_data_list)
             for index, base_data_table in enumerate(base_data_list):
@@ -189,25 +186,111 @@ class RMPAGenerate:
                 ])
                 _main_group_data_list.append(shape_setup_bytes)
                 _extra_one_data_list.append(shape_size_data_bytes)
-            _1 = b''.join(_main_group_data_list)
-            _2 = b''.join(_extra_one_data_list)
-            return _1 + _2
-        pass
+
+        elif type_name == 'route':
+            route_block_size = 0x3c * len(base_data_list)
+            route_block_filling_size = (0x10 - route_block_size % 0x10) % 0x10
+            route_extra_start_pos = route_block_size + route_block_filling_size
+            route_extra_latest_end_pos = 0
+            for index, base_data_table in enumerate(base_data_list):
+                block_start_pos = group_start_pos + 0x3c * index
+                # 1
+                route_number = base_data_table.get('route number')
+                # 2
+                route_name = base_data_table.get('name')
+                route_name_pos = self.pre.fixed_name_table_position_table.get(route_name, block_start_pos)
+                route_name_pos -= block_start_pos
+                # 3
+                route_pos_data = base_data_table.get('positions')
+                route_pos_float_iter = map(float, route_pos_data)
+                route_pos_bytes = b''.join(map(float_to_4bytes, route_pos_float_iter))
+                # 4
+                _route_extra_bytes = b''
+                next_route_list = base_data_table.get("current->next number")
+                next_route_count = len(next_route_list)     # parser要调整数据 不能再固定了
+                if next_route_count > 0:
+                    next_route_block_size = 0x04 * next_route_count
+                    next_route_block_filling_size = (0x10 - next_route_block_size % 0x10) % 0x10
+                    # result size
+                    next_route_block_align_size = next_route_block_size + next_route_block_filling_size
+                    # next_route_bytes = b''
+                    _next_route_encoded_byte_iterator = map(int_to_4bytes, next_route_list)
+                    next_route_bytes = b''.join(_next_route_encoded_byte_iterator)
+                    # for nextRoute_number in next_route_list:
+                    #     next_route_bytes += int_to_4bytes(nextRoute_number)
+                    next_route_bytes += bytes(next_route_block_filling_size)    # result bytes
+                else:
+                    next_route_block_align_size = 0
+                    next_route_bytes = b''
+                # next_route_block_start_pos = 0
+                # next_route_block_end_pos = next_route_block_start_pos + next_route_block_align_size
+                # 5
+                # sgo_start_pos = next_route_block_end_pos    # extra sgo process
+                sgo_size = amazing_extra_sgo_size   # filling data
+                rmpa_waypoint_width = base_data_table.get('rmpa_float_WayPointWidth')
+                if str(rmpa_waypoint_width).lower() != 'false':
+                    no_sgo_flag = False
+                    rmpa_waypoint_width = float(rmpa_waypoint_width)
+                    width_bytes = struct.pack('<f', rmpa_waypoint_width)
+                    extra_sgo_bytes = b''.join([
+                        amazing_extra_sgo_bin_start,
+                        width_bytes,
+                        amazing_extra_sgo_bin_end,
+                        bytes(amazing_extra_sgo_size_aligned - amazing_extra_sgo_size)
+                    ])
+                else:
+                    # filling zero
+                    no_sgo_flag = True
+                    extra_sgo_bytes = b''
+                _route_extra_bytes = next_route_bytes + extra_sgo_bytes
+
+                _extra_one_start_pos = route_extra_start_pos + route_extra_latest_end_pos - 0x3c * index
+                _next_route_blk_end_pos = _extra_one_start_pos + next_route_block_align_size
+                if no_sgo_flag:
+                    extra_sgo_info_bytes = bytes(8)
+                else:
+                    extra_sgo_info_bytes = int_to_4bytes(amazing_extra_sgo_size) + int_to_4bytes(_next_route_blk_end_pos)
+                route_block_bytes = b''.join([
+                    int_to_4bytes(route_number), int_to_4bytes(next_route_count), int_to_4bytes(_extra_one_start_pos), bytes(4),   # 0x00
+                    int_to_4bytes(_next_route_blk_end_pos), bytes(4), extra_sgo_info_bytes,     # 0x10
+                    bytes(4), int_to_4bytes(route_name_pos), route_pos_bytes,   # 0x20 ~ 0x34
+                    bytes(8)    # 0x34 ~
+                ])
+                route_extra_latest_end_pos += len(_route_extra_bytes)
+                _main_group_data_list.append(route_block_bytes)
+                # _main_group_data_list.append(bytes(route_block_filling_size))
+                _extra_one_data_list.append(_route_extra_bytes)
+            _main_group_data_list.append(bytes(route_block_filling_size))
+        else:
+            pass
+        _1 = b''.join(_main_group_data_list)
+        _2 = b''.join(_extra_one_data_list)
+        return _1 + _2
 
 
     def run(self, file_path):
 
         some_bytes = b''
         some_type_names = ['route', 'shape', 'camera', 'spawnpoint']
-        some_flags = [0, 0, 0, 0]
-        some_header_pos = [0x30, 0x30, 0x30, 0x30]
+        some_flags = []
+        # some_header_pos = [0x30, 0x30, 0x30, 0x30]
+        some_header_pos = []
         some_header_start_pos = 0x30
-        for k, v in self._data_dict.items():
+        # for k, v in self._data_dict.items():
+        for _t_n in some_type_names:
+            k = _t_n
+            v = self._data_dict.get(_t_n)
+            some_header_pos.append(some_header_start_pos)
+            if v is None:
+                some_flags.append(0)
+                continue
             block_bytes = self._build_type_block(k, v)
             some_bytes += block_bytes
-            index = some_type_names.index(k)
-            some_flags[index] = 1
-            some_header_pos[index] = some_header_start_pos
+            some_flags.append(1)
+            # some_header_pos.append(some_header_start_pos)
+            # index = some_type_names.index(k)
+            # some_flags[index] = 1
+            # some_header_pos[index] = some_header_start_pos
             some_header_start_pos += len(block_bytes)
         _byte_rmpa_header = b'\0PMR\0\0\0\1'
         header_info_list = []
@@ -238,6 +321,7 @@ class RMPAJsonPreprocess:
         self._sp_data_count = 0
         self._node_type_name = None
         self.base_data_count_table = {}
+        self._route_extra_data_size_list = []
         self._read_node()
 
         self.fixed_name_table_position_table = self.abs_str_tbl()
@@ -254,25 +338,51 @@ class RMPAJsonPreprocess:
         _3_all_sub_header = self._sub_header_count * 0x20
 
         # _4_route_block = sum(self.base_data_count_table.get('route'))
+        self.route_block_size = self.type_block_size_predict('route')
         self.shape_block_size = self.type_block_size_predict('shape')
         self.spawnpoint_block_size = self.type_block_size_predict('spawnpoint')
-        abs_pos_start = _1_rmpa_header +\
+        abs_pos_start = _1_rmpa_header + self.route_block_size +\
             self.shape_block_size + self.spawnpoint_block_size
-        print(hex(abs_pos_start))
+        print('first name offset: ', hex(abs_pos_start))
         return abs_pos_start
 
     def type_block_size_predict(self, type_name) -> int:
-        type_sub_groups_count_list = self.base_data_count_table.get(type_name, [0])
+        type_sub_groups_count_list = self.base_data_count_table.get(type_name)
+        if type_sub_groups_count_list is None:
+            return 0
         type_header_size = 0x20
         sub_header_size = 0x20 * len(type_sub_groups_count_list)
         if type_name == 'shape':
             sub_data_size = (0x30 + 0x40) * sum(type_sub_groups_count_list)
         elif type_name == 'spawnpoint':
             sub_data_size = 0x40 * sum(type_sub_groups_count_list)
-        else:
+        elif type_name == 'route':
+            # sub_data_size = 0x3c * sum(type_sub_groups_count_list)
             sub_data_size = 0
+            for route_base_count in type_sub_groups_count_list:
+                sub_data_size += 0x3c * route_base_count
+                filling_size = (0x10 - sub_data_size % 0x10) % 0x10
+                sub_data_size += filling_size
+            sub_data_size += sum(self._route_extra_data_size_list)
+        else:
+            return 0
         type_block_size = type_header_size + sub_header_size + sub_data_size
         return type_block_size
+
+    # def route_type_blk_size_predict(self, type_name='route') -> int:
+    #     type_sub_groups_count_list = self.base_data_count_table.get(type_name, [0])
+    #     sub_data_size = 0x3c * sum()
+    #     pass
+
+    def _route_type_extra_blk_propress(self, base_data_list: list):
+        for route_item in base_data_list:
+            next_list = route_item.get('current->next number')
+            extra_sgo = route_item.get("rmpa_float_WayPointWidth")
+            list_length = len(next_list)
+            next_route_blk_size = (3 + list_length) // 4 * 4 * 0x04
+            extra_sgo_size = 0 if str(extra_sgo).lower() == 'false' else 0x70
+            extra_size = next_route_blk_size + extra_sgo_size
+            self._route_extra_data_size_list.append(extra_size)
 
     def abs_str_tbl(self) -> dict:
         append_pos = self._name_pos_prediction()
@@ -302,6 +412,9 @@ class RMPAJsonPreprocess:
             sub_groups_base = self.base_data_count_table.get(self._node_type_name, [])
             sub_groups_base.append(list_count)
             self.base_data_count_table[self._node_type_name] = sub_groups_base
+            if self._node_type_name == 'route':
+                self._route_type_extra_blk_propress(list_)
+                pass
         for item in list_:
             if type(item) == dict:
                 self._read_node(item)
@@ -319,6 +432,11 @@ def int_to_4bytes(number:int) -> bytes:
 
 def float_to_4bytes(number:float) -> bytes:
     return struct.pack('>f', number)
+
+amazing_extra_sgo_bin_start = b'SGO\x00\x02\x01\x00\x00\x01\x00\x00\x00 \x00\x00\x00\x01\x00\x00\x00,\x00\x00\x00\x00\x00\x00\x004\x00\x00\x00\x02\x00\x00\x00\x04\x00\x00\x00'
+amazing_extra_sgo_bin_end = b'\x08\x00\x00\x00\x00\x00\x00\x00r\x00m\x00p\x00a\x00_\x00f\x00l\x00o\x00a\x00t\x00_\x00W\x00a\x00y\x00P\x00o\x00i\x00n\x00t\x00W\x00i\x00d\x00t\x00h\x00\x00\x00'
+amazing_extra_sgo_size = 0x66
+amazing_extra_sgo_size_aligned = 0x70
 
 def test_preprocess():
     with open(r'D:\arena\EARTH DEFENSE FORCE 5\r\MISSION\DLC\DM024\MISSION.json', 'r', encoding='utf-8') as f:
@@ -344,7 +462,7 @@ def main():
     if len(sys.argv) == 3:
         output_path = sys.argv[2]
     else:
-        output_path = f'{_sp[0]}.rmpa'
+        output_path = f'{_sp[0]}-test.rmpa'
 
     if '.json' == _sp[1].lower():
         print('working..')
@@ -357,6 +475,6 @@ if __name__ == "__main__":
 
     # test_preprocess()
     main()
-    # p = RMPAGenerate(r"D:\arena\EARTH DEFENSE FORCE 5\r\MISSION\DLC\DM022\MISSION.json")
+    # p = RMPAGenerate(r"D:\arena\EARTH DEFENSE FORCE 5\r\MISSION\TEST\T_AIWALKTEST\MISSION.json")
     # p._get_str_table()
-    # p.run(r"D:\arena\EARTH DEFENSE FORCE 5\r\MISSION\DLC\DM022\MISSIONtest2.rmpa")
+    # p.run(r"D:\arena\EARTH DEFENSE FORCE 5\r\MISSION\TEST\T_AIWALKTEST\MISSION-test.rmpa")

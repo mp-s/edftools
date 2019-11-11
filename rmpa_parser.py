@@ -112,7 +112,7 @@ class RMPAParse:
             'positions_1': coord,'positions_2': sec_coord,
         }
         if self._debug_flag:
-            _ld['block position'] = self_pos
+            _ld['block position'] = hex(self_pos)
         return _ld
 
     def _read_routes(self, route_def_pos):
@@ -124,8 +124,10 @@ class RMPAParse:
         next_route_bind_block_start_pos = self._get_4bytes_to_uint(0x08, data_chunk=bytes_)
         next_route_bind_block_end_pos = self._get_4bytes_to_uint(0x10, data_chunk=bytes_)
         route_bind_pos = self_pos + next_route_bind_block_start_pos
-        route_bind_bytes = self._get_content_bytes(route_bind_pos, size=0x10)
-        route_p = [ self._get_4bytes_to_uint(x, route_bind_bytes) for x in range(0, 0x10, 4) ]
+        # rout_p_size = next_route_bind_block_end_pos - next_route_bind_block_start_pos
+        rout_p_size = next_route_count * 0x04
+        route_bind_bytes = self._get_content_bytes(route_bind_pos, size=rout_p_size)
+        route_p = [ self._get_4bytes_to_uint(x, route_bind_bytes) for x in range(0, rout_p_size, 4) ]
 
         rmpa_identifier = self._get_4bytes_to_uint(0x14, bytes_)
 
@@ -133,9 +135,12 @@ class RMPAParse:
         extra_sgo_pos = self._get_4bytes_to_uint(0x1c, bytes_)
         if extra_sgo_size:
             extra_sgo_bytes = self._get_content_bytes(extra_sgo_pos + self_pos, size=extra_sgo_size)
-            extra_sgo_b64 = base64.b64encode(extra_sgo_bytes).decode(encoding='utf-8')
+            # extra_sgo_b64 = base64.b64encode(extra_sgo_bytes).decode(encoding='utf-8')
+            extra_sgo_endian = extra_sgo_bytes[0:4]
+            up_code = '<f' if extra_sgo_endian == b'SGO\x00' else '>f'
+            extra_sgo_b64 = struct.unpack(up_code, extra_sgo_bytes[0x28:0x2c])[0]
         else:
-            extra_sgo_b64 = ''
+            extra_sgo_b64 = 'False'
         name_str_length = self._get_4bytes_to_uint(0x20, bytes_)
         name_bytes_pos = self._get_4bytes_to_uint(0x24, bytes_)
         name_str = self._get_string(name_bytes_pos, self_pos) if name_bytes_pos else ''
@@ -144,14 +149,14 @@ class RMPAParse:
         _ddd = {
             'name': name_str,
             'positions': coord,
-            'has extra sgo': True if extra_sgo_pos else False,
-            'sgo data': extra_sgo_b64,
+            # 'has extra sgo': True if extra_sgo_pos else False,
+            'rmpa_float_WayPointWidth': extra_sgo_b64,
             'route number': current_route_number,
-            'next route count': next_route_count,
+            # 'next route count': next_route_count,
             'current->next number': route_p,
         }
         if self._debug_flag:
-            _ddd['block position'] = self_pos
+            _ddd['block position'] = hex(self_pos)
         return _ddd
 
     def _read_shape_set(self, shape_pos):
@@ -174,7 +179,7 @@ class RMPAParse:
             'shape positions data': shape_data_list,
         }
         if self._debug_flag:
-            _ldd['block position']: shape_data_abs_pos
+            _ldd['block position']: hex(shape_data_abs_pos)
         return _ldd
 
     def _read_shape_data(self, shape_pos):
@@ -311,7 +316,7 @@ if __name__ == "__main__":
 
     if '.rmpa' == _sp[1].lower():
         print('working..')
-        a = RMPAParse(debug_flag=True)
+        a = RMPAParse()
         a.read(file_path)
         a.generate_json(output_path)
         print('done!')
