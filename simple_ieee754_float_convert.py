@@ -2,14 +2,14 @@ import struct, re
 
 pattern = re.compile(r'[\.]')
 def wa():
-    print('\t输入s结束程序', '\t浮点数必须带点号', '\t输入r切换大小端', sep='\n')
+    print('\t\t输入s结束程序', '\t\t浮点数必须带点号', '\t\t输入r切换大小端', sep='\n')
 little_endian = False
 def c_e(endian):
     print(f'\t当前字节序为:{endian}')
 wa()
 c_e('big')
 while True:
-    expression_str = input("cal> ")
+    expression_str = input("FloatToHex> ")
     if ('s' == expression_str):
         break
     elif ('r' == expression_str):
@@ -19,7 +19,7 @@ while True:
         continue
     elif ('' == expression_str):
         continue
-    expression_str = re.sub(r'[^0-9a-f\.]', '', expression_str)
+    expression_str = re.sub(r'[^0-9a-f\-\.]', '', expression_str)
 
     if little_endian:
         pack_str = '<f'
