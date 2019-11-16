@@ -1,5 +1,6 @@
 import struct
 import base64
+import rmpa_config as cfg
 
 class RMPAParse:
 
@@ -20,10 +21,10 @@ class RMPAParse:
         position_camera_header = self._get_4bytes_to_uint(0x1C)
         position_spawnpoint_header = self._get_4bytes_to_uint(0x24)
         self._head_dict = {
-            'route': (position_route_header, flag_route_header),
-            'shape': (position_shape_header, flag_shape_header),
-            'camera': (position_camera_header, flag_camera_header),
-            'spawnpoint': (position_spawnpoint_header, flag_spawnpoint_header),
+            cfg.type_route: (position_route_header, flag_route_header),
+            cfg.type_shape: (position_shape_header, flag_shape_header),
+            cfg.type_camera: (position_camera_header, flag_camera_header),
+            cfg.type_spawnpoint: (position_spawnpoint_header, flag_spawnpoint_header),
         }
 
 
@@ -46,10 +47,10 @@ class RMPAParse:
             _unamed_list.append(self._read_sub_header(sub_current_pos, type_name))
             pass
         type_header_dict = {
-            'type group name': name_str,
+            cfg.type_group_name: name_str,
             # 'type chunk end position': type_chunk_end_position,
             # 'numbers of sub header': sub_header_num,
-            'sub groups': _unamed_list,
+            cfg.sub_enum_groups: _unamed_list,
         }
         return type_header_dict
 
@@ -58,9 +59,9 @@ class RMPAParse:
         self_pos = sub_header_pos
         bytes_ = self._get_content_bytes(sub_header_pos, size=sub_header_size)
         base_type_dict = {
-            'spawnpoint': self._read_spawnpoint,
-            'route': self._read_routes,
-            'shape': self._read_shape_set,
+            cfg.type_spawnpoint: self._read_spawnpoint,
+            cfg.type_route: self._read_routes,
+            cfg.type_shape: self._read_shape_set,
         }
 
         sub_chunk_end_position = self._get_4bytes_to_uint(0x08, bytes_)
@@ -71,10 +72,10 @@ class RMPAParse:
         base_data_block_start_pos = self._get_4bytes_to_uint(0x1C, bytes_)
         _base_list = []
         _base_data_size = {
-            'route': 0x3c,
-            'shape': 0x30,
+            cfg.type_route: 0x3c,
+            cfg.type_shape: 0x30,
             # 'camera':,
-            'spawnpoint': 0x40,
+            cfg.type_spawnpoint: 0x40,
         }
         for _ in range(base_data_num):
             data_size = _base_data_size.get(type_name)
@@ -82,9 +83,9 @@ class RMPAParse:
             _fn = base_type_dict.get(type_name, str)
             _base_list.append(_fn(base_data_current_pos))
         ld = {
-            'sub group name': name_str,
+            cfg.sub_enum_name: name_str,
             # 'base type count': base_data_num,
-            'base data': _base_list,
+            cfg.base_data_list: _base_list,
         }
         return ld
 
@@ -108,11 +109,12 @@ class RMPAParse:
         name_str = self._get_string(name_str_pos, self_pos)
 
         _ld = {
-            'name': name_str,
-            'positions_1': coord,'positions_2': sec_coord,
+            cfg.base_name: name_str,
+            cfg.spawnpoint_pos_1: coord,
+            cfg.spawnpoint_pos_2: sec_coord,
         }
         if self._debug_flag:
-            _ld['block position'] = hex(self_pos)
+            _ld[cfg.current_block_position] = hex(self_pos)
         return _ld
 
     def _read_routes(self, route_def_pos):
@@ -147,16 +149,16 @@ class RMPAParse:
         coord = [ self._get_4bytes_to_float(x, bytes_) for x in range(0x28, 0x34, 4) ]
 
         _ddd = {
-            'name': name_str,
-            'positions': coord,
+            cfg.route_number: current_route_number,
+            cfg.base_name: name_str,
+            cfg.route_position: coord,
             # 'has extra sgo': True if extra_sgo_pos else False,
-            'rmpa_float_WayPointWidth': extra_sgo_b64,
-            'route number': current_route_number,
+            cfg.waypoint_width: extra_sgo_b64,
             # 'next route count': next_route_count,
-            'current->next number': route_p,
+            cfg.route_next_block: route_p,
         }
         if self._debug_flag:
-            _ddd['block position'] = hex(self_pos)
+            _ddd[cfg.current_block_position] = hex(self_pos)
         return _ddd
 
     def _read_shape_set(self, shape_pos):
@@ -174,12 +176,12 @@ class RMPAParse:
         shape_data_abs_pos = shape_data_pos + self_pos
         shape_data_list = self._read_shape_data(shape_data_abs_pos)
         _ldd = {
-            'shape type name': shape_type_name_str,
-            'shape var name': shape_var_name_str,
-            'shape positions data': shape_data_list,
+            cfg.shape_type_name: shape_type_name_str,
+            cfg.shape_variable_name: shape_var_name_str,
+            cfg.shape_position_data: shape_data_list,
         }
         if self._debug_flag:
-            _ldd['block position']: hex(shape_data_abs_pos)
+            _ldd[cfg.current_block_position]: hex(shape_data_abs_pos)
         return _ldd
 
     def _read_shape_data(self, shape_pos):
@@ -275,7 +277,8 @@ class RMPAParse:
         # print(_struct)
         self._read_struct()
         with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(json.dumps(self._struct, ensure_ascii=False, indent=2))
+            # f.write(json.dumps(self._struct, ensure_ascii=False, indent=2))
+            json.dump(self._struct, f, ensure_ascii=False, indent=2)
 
     def get_all_string(self):
         position_spawnpoint_header = self._get_4bytes_to_uint(0x24)
