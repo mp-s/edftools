@@ -374,7 +374,7 @@ asm_code_comments = {
 }
 
 def get_asm_comment(asm_code_str:str, operand_str:str='')->str:
-    if 'rel' in asm_code_str:
+    if 'rel' in asm_code_str and operand_str != '0x00':
         ret_str = f'  Local var {operand_str}'
     else:
         ret_str = asm_code_comments.get(asm_code_str, '')
