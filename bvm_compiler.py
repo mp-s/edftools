@@ -26,7 +26,7 @@ class BVMGenerate(object):
                 _split_group = func_arg.split('(')
                 func_ret_type = _split_group[0]                 # 'int'
 
-                func_arg_o_str = _split_group[1]         # 'float, float, int, float)'
+                func_arg_o_str = _split_group[1]                # 'float, float, int, float)'
                 func_arg_list = func_arg_o_str[:-1].split(',')  # ['float', ' float', ' int', ' float']
                 func_args_num = 0 if '' == func_arg_list[0] else len(func_arg_list)              # 4
                 _trimed_fn_name = func_line[:-1]
@@ -64,7 +64,6 @@ class BVMGenerate(object):
             if 'exit' in line:    # first exit break
                 self._constructor_bytecode_list.append(b'\x30')
                 flag_constructor = False
-                bytecode_head = index + 1
                 self._asm_data = self._trimed_data[index+1:]
                 self._global_var_bytes_list = _global_var_list
                 break
@@ -307,8 +306,8 @@ class BVMGenerate(object):
         # 0x20
         func_names_num = len(self._named_fn_bytecode_positions)
         func_names_ofs = global_vars_ofs + (global_vars_num * 0x04)
-        stack1_size = int.to_bytes(512, 4, byteorder='little')
-        stack2_size = int.to_bytes(512, 4, byteorder='little')
+        stack1_size = self._int_to_4bytes(512)
+        stack2_size = self._int_to_4bytes(512)
         # 0x30
         bytes_constructor_offset = func_names_ofs + (func_names_num * 0x10)
         bytes_main_offset = None    # 构造体偏移 + 大小
@@ -357,7 +356,7 @@ class BVMGenerate(object):
         gbl_var_abs_pos_list = []
         for int_ in self._gbl_var_rel_pos_list:
             abs_pos = bytes_strtbl2_offset + int_
-            abs_pos_byte = abs_pos.to_bytes(4, byteorder='little')
+            abs_pos_byte = self._int_to_4bytes(abs_pos)
             gbl_var_abs_pos_list.append(abs_pos_byte)
         global_vars_bytes = b''.join(gbl_var_abs_pos_list)
 
@@ -370,14 +369,15 @@ class BVMGenerate(object):
             _3_rel_arg_pos = self._named_fn_block3_positions.get(k, 0)
             _3_abs_arg_pos = _3_rel_arg_pos + fn_arg_types_offset
             _4_arg_nums = self._named_fn_accept_num.get(k, 0)
-            _1 = _1_rel_bytecode_pos.to_bytes(4, byteorder='little')
-            _2 = _2_abs_str_pos.to_bytes(4, byteorder='little')
-            _3 = _3_abs_arg_pos.to_bytes(4, byteorder='little')
+            _1 = self._int_to_4bytes(_1_rel_bytecode_pos)
+            _2 = self._int_to_4bytes(_2_abs_str_pos)
+            _3 = self._int_to_4bytes(_3_abs_arg_pos)
             ret_type = self._named_fn_ret_type_bytes.get(k)
             if ret_type:
                 _4 = _4_arg_nums.to_bytes(1, byteorder='little') + ret_type + bytes(2)
             else:
-                _4 = _4_arg_nums.to_bytes(4, byteorder='little')
+                # _4 = _4_arg_nums.to_bytes(4, byteorder='little')
+                _4 = self._int_to_4bytes(_4_arg_nums)
             named_fn_chunk_byte_list.append(b''.join([_1, _2, _3, _4]))
         func_names_bytes = b''.join(named_fn_chunk_byte_list)
 
@@ -386,28 +386,26 @@ class BVMGenerate(object):
         bytes_padding16_size = 0x10 - (file_size % 0x10) + file_size
 
         # convert bytes
-        global_vars_num = global_vars_num.to_bytes(4, byteorder='little')
-        global_vars_ofs = global_vars_ofs.to_bytes(4, byteorder='little')
-        func_names_num = func_names_num.to_bytes(4, byteorder='little')
-        func_names_ofs = func_names_ofs.to_bytes(4, byteorder='little')
-        bytes_constructor_offset = bytes_constructor_offset.to_bytes(4, byteorder='little')
-        bytes_main_offset = bytes_main_offset.to_bytes(4, byteorder='little')
-        bytes_strtbl_offset = bytes_strtbl_offset.to_bytes(4, byteorder='little')
-        bytes_clsname_offset = bytes_clsname_offset.to_bytes(4, byteorder='little')
-        # bytes_padding4_size = bytes_padding4_size.to_bytes(4, byteorder='little')
-        # bytes_padding16_size = bytes_padding16_size.to_bytes(4, byteorder='little')
-
+        global_vars_num = self._int_to_4bytes(global_vars_num)
+        global_vars_ofs = self._int_to_4bytes(global_vars_ofs)
+        func_names_num = self._int_to_4bytes(func_names_num)
+        func_names_ofs = self._int_to_4bytes(func_names_ofs)
+        bytes_constructor_offset = self._int_to_4bytes(bytes_constructor_offset)
+        bytes_main_offset = self._int_to_4bytes(bytes_main_offset)
+        bytes_strtbl_offset = self._int_to_4bytes(bytes_strtbl_offset)
+        bytes_clsname_offset = self._int_to_4bytes(bytes_clsname_offset)
 
         _lst = [
             bytes_head_type, bytes_head_type2, bytes_head_s1,
             bytes_head_s2, global_vars_num, global_vars_ofs,
             func_names_num, func_names_ofs, stack1_size, stack2_size,
+
             bytes_constructor_offset, bytes_main_offset,
             bytes_strtbl_offset, bytes_clsname_offset,
             bytes_static1,
-            bytes_padding4_size.to_bytes(4, byteorder='little'),
+            self._int_to_4bytes(bytes_padding4_size),
             bytes_static2,
-            bytes_padding16_size.to_bytes(4, byteorder='little')
+            self._int_to_4bytes(bytes_padding16_size),
         ]
         header_bytes = b''.join(_lst)
         _lst2 = [
@@ -418,9 +416,12 @@ class BVMGenerate(object):
         ]
         full_bytes = b''.join(_lst2)
         if len(full_bytes) < bytes_padding16_size :
-            filler = b'\xba' * (bytes_padding16_size - len(full_bytes))
-            full_bytes = full_bytes + filler
+            padding = b'\xba' * (bytes_padding16_size - len(full_bytes))
+            full_bytes = full_bytes + padding
         return full_bytes
+
+    def _int_to_4bytes(self, number:int)->bytes:
+        return number.to_bytes(4, byteorder='little')
 
     def read(self, file_path):
         with open(file=file_path, mode='r', encoding='utf-8') as f:
@@ -429,7 +430,7 @@ class BVMGenerate(object):
 
     def debug_file(self, file_path = None):
         # print(self._asm_data)
-        with open('q:\debug.asm', 'wb') as f:
+        with open(file_path, 'wb') as f:
             f.write(b''.join(self._asm_data))
 
     def build_file(self, file_path):
@@ -444,21 +445,25 @@ class BVMGenerate(object):
         with open(file=file_path, mode='wb') as f:
             f.write(bytes_buffer)
 
-if __name__ == "__main__":
-    import os, sys
+def run_main():
+    import sys
+    from pathlib import Path
     if len(sys.argv) == 1:
         print('source file required!')
         sys.exit()
     else:
-        file_path = sys.argv[1]
-    _sp = os.path.splitext(file_path)
+        file_path = Path(sys.argv[1])
+
     if len(sys.argv) == 3:
-        output_path = sys.argv[2]
+        output_path = Path(sys.argv[2])
     else:
-        output_path = f'{_sp[0]}.bvm'
-    if '.asm' == _sp[1].lower() or '.txt' == _sp[1].lower():
+        output_path = file_path.with_suffix('.bvm')
+    if file_path.suffix.lower() in ('.asm', '.txt'):
         print('working...')
-        bvm_ = BVMGenerate()
-        bvm_.read(file_path)
-        bvm_.build_file(output_path)
+        bvm_from_asm = BVMGenerate()
+        bvm_from_asm.read(file_path)
+        bvm_from_asm.build_file(output_path)
         print('done!')
+
+if __name__ == "__main__":
+    run_main()

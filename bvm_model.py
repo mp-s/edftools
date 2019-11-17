@@ -245,8 +245,9 @@ call_func_types = {
 
     '2100': 'SetGenerator(int id, int, str sgo, int amount, float hpScale, float rate, float interval, bool)',
     '2101': 'set_generator_once??',
+
     '2200': 'int create_enemy_squad_in_dropboat??(int, str, float, str, int, float, int)',
-    '2201': 'dropboat?',
+    '2201': 'dropboat??(int)',
     '2202': 'dropboat_open_door??(int)',
     '2203': 'SetDropBoatAutoCruise(int, str, float)',
 
@@ -260,10 +261,12 @@ call_func_types = {
     '3050': 'SetObjectEnemy(int id)',
     '3051': 'SetObjectNeutral(int id)',
     '3052': 'SetObjectTeam(int id, int team)',
+    
     '3100': 'SetAiRouteSpeed(int id, float speedfactor)',
     '3101': 'SetAiRoute(int ID, string path)',
     '3102': 'SetAiPath(int ID, string Path)',
     '3103': 'bool ObjectNotOnRoute(int ID)',
+    
     '3152': 'RecruitObject(int leader, int follower)',
     '3172': 'SetAiObjectDirection_Point(int, wchar_t*, float, bool);',
 
@@ -325,6 +328,7 @@ call_func_types = {
     '9115': 'CreateEventFactor_TeamObjectCount2(int team, int count)',
     "9116": "CreateEventFactorObjectGroupCount(int, int)",
     "9117": "CreateEventFactorObjectGroupEncount(int)",
+
     "9120": "CreateEventFactorTeamEncount(int team)",
     "9121": "CreateEventFactorTeamNotEncount(int team)",
     # "9144": "CreateEventFactorPlayerAreaCheck(string ShapeNode)",
@@ -353,6 +357,28 @@ func_arg_type_byte = {
     'float': b'\x02',
     'string': b'\x03',
 }
+
+asm_code_comments = {
+    'testg': 'A < B',
+    'testle': 'A >= B',
+    'testge': 'A <= B',
+    'testl': 'A > B',
+    'teste': 'A == B',
+    'testne': 'A != B',
+    'testnand': 'A != 0 and B != 0',
+    'testor': 'A != 0 or B != 0',
+    'testz': 'pop B, push !B',
+    'cvtstore': 'pop B, pop A, *A=B, push B --- 0x01(B is float), 0x02(A is float), 0x03(A and B both float)',
+    'store': 'pop B, pop A, *A=B',
+    # 'rel': f'  Local variable 0x{_}  ',
+}
+
+def get_asm_comment(asm_code_str:str, operand_str:str='')->str:
+    if 'rel' in asm_code_str:
+        ret_str = f'  Local var {operand_str}'
+    else:
+        ret_str = asm_code_comments.get(asm_code_str, '')
+    return ret_str
 
 def compiler_bytecode(opcode:str, compiled_operand:bytes = None):
     no_opr = {

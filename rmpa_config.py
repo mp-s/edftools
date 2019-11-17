@@ -33,7 +33,13 @@ spawnpoint_pos_1 = 'positions_1'
 spawnpoint_pos_2 = 'positions_2'
 
 # debug
+type_chunk_end_position = 'type_chunk_end_position'
 current_block_position = 'block position'
+sub_header_count = 'numbers of enum sub header'
+base_data_count = 'base type count'
+route_next_block_pos = 'next blocks pos'
+route_sgo_block_pos = 'extra sgo pos'
+shape_size_pos = 'shape size data pos'
 
 # header groups
 compose_header = [type_route, type_shape, type_camera, type_spawnpoint]

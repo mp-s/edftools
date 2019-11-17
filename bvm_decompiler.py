@@ -1,6 +1,6 @@
 import struct
 
-from bvm_model import *
+import bvm_model as mdl
 
 
 class BvmData:
@@ -61,16 +61,16 @@ class BvmData:
 
             _index = self._get_int(arg_index)
             _arg_byte = self._get_content(_index, _index+1)
-            if  _arg_byte in func_arg_types:
+            if  _arg_byte in mdl.func_arg_types:
                 types_name = []
                 if arg_count:
                     types = self._get_content(_index, _index + arg_count)
                     for arg_type in types:
                         arg_type = arg_type.to_bytes(1, self._byteorder)
-                        types_name.append(func_arg_types.get(arg_type))
+                        types_name.append(mdl.func_arg_types.get(arg_type))
                 type_str = ', '.join(types_name)
                 if func_return_type_byte != b'\x00':
-                    return_type_str = func_arg_types.get(func_return_type_byte)
+                    return_type_str = mdl.func_arg_types.get(func_return_type_byte)
                 else:
                     return_type_str = ''
                 return_string = f'\n{func_name}:   /- {return_type_str}({type_str})'
@@ -101,7 +101,7 @@ class BvmData:
             _opcode_offset = offset
             offset += 1
             ukn_opcode = (f'-UNKNOWN-: {opcode.hex()}',0)
-            opcode_asm, operand_len = asm_opcode.get(opcode, ukn_opcode)
+            opcode_asm, operand_len = mdl.asm_opcode.get(opcode, ukn_opcode)
             buffer = [opcode.hex(), opcode_asm]
 
             if operand_len == 0:
@@ -138,7 +138,7 @@ class BvmData:
                     operand_str = str(self._get_int(operand))
                     # 添加注释
                     if opcode_asm == 'cuscall0':
-                        comments = call_func_types.get(operand_str, None)
+                        comments = mdl.call_func_types.get(operand_str, None)
                 elif opcode_asm in operands_use_offset:
                     operand_int = int(self._convert_operand(operand, operand_len))
                     mark_offset = _opcode_offset + operand_int
@@ -152,32 +152,7 @@ class BvmData:
                 else:
                     _ = operand.hex() if self._byteorder == 'big' else operand[::-1].hex()
                     operand_str = f'0x{_}'
-                    if 'testg' == opcode_asm:
-                        comments = 'A < B'
-                    elif 'testle' == opcode_asm:
-                        comments = 'A >= B'
-                    elif 'testge' == opcode_asm:
-                        comments = 'A <= B'
-                    elif 'testl' == opcode_asm:
-                        comments = 'A > B'
-                    elif 'teste' == opcode_asm:
-                        comments = 'A == B'
-                    elif 'testne' == opcode_asm:
-                        comments = 'A != B'
-                    elif 'testnand' == opcode_asm:
-                        comments = 'A != 0 and B != 0'
-                    elif 'testor' == opcode_asm:
-                        comments = 'A != 0 or B != 0'
-                    elif 'testz' == opcode_asm:
-                        comments = 'pop B, push !B'
-                    elif 'cvtstore' == opcode_asm:
-                        comments = 'pop B, pop A, *A=B, push B --- 0x01(B is float), 0x02(A is float), 0x03(A and B both float)'
-                    elif 'store' == opcode_asm:
-                        comments = 'pop B, pop A, *A=B'
-                    elif 'rel' in opcode_asm:
-                        comments = f'  Local variable 0x{_}  '
-                    else:
-                        pass
+                    comments = mdl.get_asm_comment(opcode_asm, operand_str)
                 
                 offset += operand_len
                 buffer.append(operand_str)
@@ -293,7 +268,7 @@ class BvmData:
         return bytes_.decode(encoding=self._encoding)
 
     def _get_offset(self, offset_name: str) -> int:
-        offset = offset_list.get(offset_name)
+        offset = mdl.offset_list.get(offset_name)
         return self._get_int(self.data[offset:offset+4]) 
 
     def _get_content(self, offset1: int, offset2: int) -> bytes:
@@ -303,21 +278,25 @@ class BvmData:
     def _get_int(self, byte_:bytes, signed_=False) -> int:
         return int.from_bytes(byte_, byteorder=self._byteorder, signed=signed_)
 
-if __name__ == "__main__":
-    import os, sys
+def run_main():
+    import sys
+    from pathlib import Path
     if len(sys.argv) == 1:
         print('BVM file required!')
         sys.exit()
     else:
-        file_path = sys.argv[1]
-    _sp = os.path.splitext(file_path)
+        file_path = Path(sys.argv[1])
+
     if len(sys.argv) == 3:
-        output_path = sys.argv[2]
+        output_path = Path(sys.argv[2])
     else:
-        output_path = f'{_sp[0]}.asm'
-    if '.bvm' == _sp[1].lower():
+        output_path = file_path.with_suffix('.asm')
+    if '.bvm' == file_path.suffix.lower():
         print('working...')
         bvm_ = BvmData(file_path)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with output_path.open(mode='w', encoding='utf-8') as f:
             f.write(bvm_.output_data())
         print('done!')
+
+if __name__ == "__main__":
+    run_main()
