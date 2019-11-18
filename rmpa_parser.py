@@ -36,7 +36,7 @@ class RMPAParse:
         sub_header_num = self._get_4bytes_to_uint(0x00, bytes_)
         sub_header_block_start_pos = self._get_4bytes_to_uint(0x04, bytes_)
         type_chunk_end_position = self._get_4bytes_to_uint(0x0C, bytes_)
-        rmpa_identifier = self._get_4bytes_to_uint(0x10, bytes_)
+        # rmpa_identifier = self._get_4bytes_to_uint(0x10, bytes_)
         name_bytes_pos = self._get_4bytes_to_uint(0x18, bytes_)
         name_str = self._get_string(name_bytes_pos, index=self_pos)
         # read sub headers
@@ -66,8 +66,8 @@ class RMPAParse:
             cfg.type_shape: self._read_shape_set,
         }
 
-        sub_chunk_end_position = self._get_4bytes_to_uint(0x08, bytes_)
-        name_str_length = self._get_4bytes_to_uint(0x10, bytes_)
+        # sub_chunk_end_position = self._get_4bytes_to_uint(0x08, bytes_)
+        # name_str_length = self._get_4bytes_to_uint(0x10, bytes_)
         name_bytes_pos = self._get_4bytes_to_uint(0x14, bytes_)
         name_str = self._get_string(name_bytes_pos, index=self_pos)
         base_data_num = self._get_4bytes_to_uint(0x18, bytes_)
@@ -98,8 +98,8 @@ class RMPAParse:
         self_pos = spawnpoint_def_pos
         bytes_ = self._get_content_bytes(spawnpoint_def_pos, size=sp_size)
 
-        unknown1 = self._get_4bytes_to_uint(0x04, data_chunk=bytes_)
-        rmpa_identifier = self._get_4bytes_to_uint(0x08, data_chunk=bytes_)
+        # sub_group_end_pos = self._get_4bytes_to_uint(0x04, data_chunk=bytes_)
+        # rmpa_identifier = self._get_4bytes_to_uint(0x08, data_chunk=bytes_)
         coord = [
             self._get_4bytes_to_float(x, data_chunk=bytes_)
             for x in range(0x0c, 0x18, 4)
@@ -108,7 +108,7 @@ class RMPAParse:
             self._get_4bytes_to_float(x, data_chunk=bytes_)
             for x in range(0x1c, 0x28, 4)
         ]
-        name_str_length = self._get_4bytes_to_uint(0x30, data_chunk=bytes_)
+        # name_str_length = self._get_4bytes_to_uint(0x30, data_chunk=bytes_)
         name_str_pos = self._get_4bytes_to_uint(0x34, data_chunk=bytes_)
         name_str = self._get_string(name_str_pos, self_pos)
 
@@ -128,7 +128,7 @@ class RMPAParse:
         current_route_number = self._get_4bytes_to_uint(0x00, bytes_)
         next_route_count = self._get_4bytes_to_uint(0x04, bytes_)
         next_route_bind_block_start_pos = self._get_4bytes_to_uint(0x08, bytes_)
-        next_route_bind_block_end_pos = self._get_4bytes_to_uint(0x10, bytes_)
+        # next_route_bind_block_end_pos = self._get_4bytes_to_uint(0x10, bytes_)
         route_bind_pos = self_pos + next_route_bind_block_start_pos
         rout_p_size = next_route_count * 0x04
         route_bind_bytes = self._get_content_bytes(route_bind_pos, size=rout_p_size)
@@ -137,7 +137,7 @@ class RMPAParse:
             for x in range(0, rout_p_size, 4)
         ]
 
-        rmpa_identifier = self._get_4bytes_to_uint(0x14, bytes_)
+        # rmpa_identifier = self._get_4bytes_to_uint(0x14, bytes_)
 
         extra_sgo_size = self._get_4bytes_to_uint(0x18, bytes_)
         extra_sgo_pos = self._get_4bytes_to_uint(0x1c, bytes_)
@@ -149,7 +149,7 @@ class RMPAParse:
             extra_sgo_b64 = struct.unpack(up_code, extra_sgo_bytes[0x28:0x2c])[0]
         else:
             extra_sgo_b64 = 'False'
-        name_str_length = self._get_4bytes_to_uint(0x20, bytes_)
+        # name_str_length = self._get_4bytes_to_uint(0x20, bytes_)
         name_bytes_pos = self._get_4bytes_to_uint(0x24, bytes_)
         name_str = self._get_string(name_bytes_pos, self_pos) if name_bytes_pos else ''
         coord = [ 
@@ -175,10 +175,10 @@ class RMPAParse:
         self_pos = shape_pos
         bytes_ = self._get_content_bytes(self_pos, size=shape_set_size)
 
-        shape_type_name_length = self._get_4bytes_to_uint(0x04, bytes_)
+        # shape_type_name_length = self._get_4bytes_to_uint(0x04, bytes_)
         shape_type_name_pos = self._get_4bytes_to_uint(0x08, bytes_)
         shape_type_name_str = self._get_string(shape_type_name_pos, self_pos)
-        shape_var_name_length = self._get_4bytes_to_uint(0x0c, bytes_)
+        # shape_var_name_length = self._get_4bytes_to_uint(0x0c, bytes_)
         shape_var_name_pos = self._get_4bytes_to_uint(0x10, bytes_)
         shape_var_name_str = self._get_string(shape_var_name_pos, self_pos)
         shape_data_pos = self._get_4bytes_to_uint(0x24, bytes_)
