@@ -1,4 +1,6 @@
+import argparse
 import struct
+from pathlib import Path
 
 import bvm_model as mdl
 
@@ -7,7 +9,8 @@ class BvmData:
 
     jmp_loc_count = 0
     # 添加debug参数, 减少不必要噪音
-    def __init__(self, file_path: str, debug:int = False):
+
+    def __init__(self, file_path: str, debug: int = False):
         self._debug_mode = debug
         with open(file_path, 'rb') as f:
             self.data = f.read()
@@ -33,7 +36,7 @@ class BvmData:
         self._index_asm = self._get_offset('asm_code_chunk_index')
         self._index_str = self._get_offset('string_chunk_index')
         self._index_class = self._get_offset('class_name_index')
-    
+
     def get_global_var_name(self):
         size = self._count_ptr_list * 4
         offset2 = self._index_ptr_list + size
@@ -43,13 +46,13 @@ class BvmData:
         for index, str_index in enumerate(ptr_list):
             str_ = self._get_string(str_index)
             self._global_vars[index] = str_
-    
+
     def get_func_name(self):
         size = self._count_ptr2_list * 0x10
         end_offset = self._index_ptr2_list + size
         ptr2_data = self._get_content(self._index_ptr2_list, end_offset)
         assert len(ptr2_data) == size
-        
+
         ptr2_list = [ptr2_data[i:i+0x10] for i in range(0, size, 16)]
         for ptr2_chunk in ptr2_list:
             _lst = [ptr2_chunk[i:i+4] for i in range(0, 16, 4)]
@@ -61,7 +64,7 @@ class BvmData:
 
             _index = self._get_int(arg_index)
             _arg_byte = self._get_content(_index, _index+1)
-            if  _arg_byte in mdl.func_arg_types:
+            if _arg_byte in mdl.func_arg_types:
                 types_name = []
                 if arg_count:
                     types = self._get_content(_index, _index + arg_count)
@@ -70,7 +73,8 @@ class BvmData:
                         types_name.append(mdl.func_arg_types.get(arg_type))
                 type_str = ', '.join(types_name)
                 if func_return_type_byte != b'\x00':
-                    return_type_str = mdl.func_arg_types.get(func_return_type_byte)
+                    return_type_str = mdl.func_arg_types.get(
+                        func_return_type_byte)
                 else:
                     return_type_str = ''
                 return_string = f'\n{func_name}:   /- {return_type_str}({type_str})'
@@ -79,10 +83,12 @@ class BvmData:
                 return_string = f'\n{class_name_}::{func_name}:'
             self._asm_jmp_mark[jmp_mark_index] = return_string
             if self._debug_mode:
-                print(func_name, f'block ptr:{jmp_mark_index}, className_index:{arg_index}, global stores count: {arg_count}')
-    
+                print(
+                    func_name, f'block ptr:{jmp_mark_index}, className_index:{arg_index}, global stores count: {arg_count}')
+
     def get_constructor(self):
-        _construct_chunk = self._get_content(self._index_constructor, self._index_asm)
+        _construct_chunk = self._get_content(
+            self._index_constructor, self._index_asm)
         self.__asm_decompiler(_construct_chunk, self._construct_lines)
         pass
 
@@ -90,17 +96,17 @@ class BvmData:
         _asm_chunk = self._get_content(self._index_asm, self._index_str)
         self.__asm_decompiler(_asm_chunk, self._asm_lines)
 
-
-    def __asm_decompiler(self, chunk:bytes, buffer_dict:dict) -> dict:
+    def __asm_decompiler(self, chunk: bytes, buffer_dict: dict) -> dict:
         offset = 0
-        operands_use_uint = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3']
+        operands_use_uint = ['cuscall', 'cuscall0',
+                             'cuscall1', 'cuscall2', 'cuscall3']
         operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
 
         while(offset < len(chunk)):
             opcode = chunk[offset:offset+1]
             _opcode_offset = offset
             offset += 1
-            ukn_opcode = (f'-UNKNOWN-: {opcode.hex()}',0)
+            ukn_opcode = (f'-UNKNOWN-: {opcode.hex()}', 0)
             opcode_asm, operand_len = mdl.asm_opcode.get(opcode, ukn_opcode)
             buffer = [opcode.hex(), opcode_asm]
 
@@ -115,7 +121,7 @@ class BvmData:
                 elif 'abs' in opcode_asm:   # "**abs 0"
                     buffer.append('0')
                     buffer.append(self._global_vars.get(0))
-                elif  'rel' in opcode_asm:
+                elif 'rel' in opcode_asm:
                     buffer.append('0x00')
                 else:
                     pass
@@ -126,10 +132,11 @@ class BvmData:
                 operand = chunk[offset:offset+operand_len]
                 comments = None
 
-                if (4 == operand_len and opcode_asm != 'pushstr' 
-                        and opcode_asm not in operands_use_uint 
+                if (4 == operand_len and opcode_asm != 'pushstr'
+                        and opcode_asm not in operands_use_uint
                         and opcode_asm not in operands_use_offset):  # all floats
-                    operand_str = self._convert_operand(operand, 4)  # float_hex.hex_to_float(operand)
+                    # float_hex.hex_to_float(operand)
+                    operand_str = self._convert_operand(operand, 4)
                 elif opcode_asm == 'push':  # all numbers
                     operand_str = self._convert_operand(operand, operand_len)
                 elif opcode_asm == 'pushstr':   # all bytes offset
@@ -140,7 +147,8 @@ class BvmData:
                     if opcode_asm == 'cuscall0':
                         comments = mdl.call_func_types.get(operand_str, None)
                 elif opcode_asm in operands_use_offset:
-                    operand_int = int(self._convert_operand(operand, operand_len))
+                    operand_int = int(
+                        self._convert_operand(operand, operand_len))
                     mark_offset = _opcode_offset + operand_int
                     operand_str = f'location_{mark_offset}'
                     self._asm_jmp_mark[mark_offset] = f'\n{operand_str} :'
@@ -150,10 +158,11 @@ class BvmData:
                     operand_str = str(operand_int)
                     comments = self._global_vars.get(operand_int)
                 else:
-                    _ = operand.hex() if self._byteorder == 'big' else operand[::-1].hex()
+                    _ = operand.hex(
+                    ) if self._byteorder == 'big' else operand[::-1].hex()
                     operand_str = f'0x{_}'
                     comments = mdl.get_asm_comment(opcode_asm, operand_str)
-                
+
                 offset += operand_len
                 buffer.append(operand_str)
                 if comments:
@@ -172,7 +181,8 @@ class BvmData:
         # global vars
         for index, var_name in self._global_vars.items():
             out_buffer.append(f'name {var_name}    // {index}')
-        constructor_name = self._get_string(self._index_class.to_bytes(4, byteorder=self._byteorder))
+        constructor_name = self._get_string(
+            self._index_class.to_bytes(4, byteorder=self._byteorder))
         out_buffer.append(f'\n{constructor_name}::{constructor_name}:')
         for values in self._construct_lines.values():
             if not self._debug_mode:
@@ -193,15 +203,17 @@ class BvmData:
             space_length = 16 - 4 - len(values[1])
             space_placeholder = ' ' * space_length
             if len(values) == 3:
-                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}')
+                out_buffer.append(
+                    f'{values[0]}  {values[1]}{space_placeholder}{values[2]}')
             elif len(values) == 4:
-                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {values[3]}')
+                out_buffer.append(
+                    f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {values[3]}')
             elif len(values) > 4:
                 comment_str = '  '.join(values[3:])
-                out_buffer.append(f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {comment_str}')
+                out_buffer.append(
+                    f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {comment_str}')
             else:
                 out_buffer.append('  '.join(values))
-
 
         return '\n'.join(out_buffer)
 
@@ -225,7 +237,7 @@ class BvmData:
             utf16_byte = b''
         return str_list
 
-    def _convert_operand(self, bytes_:bytes, bytes_length:int) -> str:
+    def _convert_operand(self, bytes_: bytes, bytes_length: int) -> str:
         '''
         signed int or
         float
@@ -269,34 +281,49 @@ class BvmData:
 
     def _get_offset(self, offset_name: str) -> int:
         offset = mdl.offset_list.get(offset_name)
-        return self._get_int(self.data[offset:offset+4]) 
+        return self._get_int(self.data[offset:offset+4])
 
     def _get_content(self, offset1: int, offset2: int) -> bytes:
         data = self.data[offset1:offset2]
         return data
 
-    def _get_int(self, byte_:bytes, signed_=False) -> int:
+    def _get_int(self, byte_: bytes, signed_=False) -> int:
         return int.from_bytes(byte_, byteorder=self._byteorder, signed=signed_)
 
-def run_main():
-    import sys
-    from pathlib import Path
-    if len(sys.argv) == 1:
-        print('BVM file required!')
-        sys.exit()
-    else:
-        file_path = Path(sys.argv[1])
 
-    if len(sys.argv) == 3:
-        output_path = Path(sys.argv[2])
+def run_main():
+    args = parse_args()
+    source_path = Path(args.source_path)
+
+    if args.destination_path:
+        output_path = Path(args.destination_path)
     else:
-        output_path = file_path.with_suffix('.asm')
-    if '.bvm' == file_path.suffix.lower():
+        output_path = source_path.with_suffix('.asm')
+
+    if '.bvm' == source_path.suffix.lower():
         print('working...')
-        bvm_ = BvmData(file_path)
+        bvm_ = BvmData(source_path)
         with output_path.open(mode='w', encoding='utf-8') as f:
             f.write(bvm_.output_data())
         print('done!')
+
+
+def parse_args():
+    description = 'bvm file decompiler'
+    parse = argparse.ArgumentParser(description=description)
+
+    help_ = 'input bvm file path'
+    parse.add_argument('source_path', help=help_)
+    help_ = 'output asm file path'
+    parse.add_argument('destination_path', help=help_, nargs='?')
+
+    help_ = 'enable debug mode'
+    parse.add_argument('-d', '--debug', help=help_,
+                       action='store_true', default=False)
+    parse.add_argument('-t', action='store_true')
+
+    return parse.parse_args()
+
 
 if __name__ == "__main__":
     run_main()

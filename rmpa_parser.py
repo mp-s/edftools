@@ -1,10 +1,14 @@
-import struct
+import argparse
 import base64
+import struct
+from pathlib import Path
+
 import rmpa_config as cfg
+
 
 class RMPAParse:
 
-    def __init__(self, debug_flag = False, *args, **kwargs):
+    def __init__(self, debug_flag=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._debug_flag = debug_flag
 
@@ -27,7 +31,6 @@ class RMPAParse:
             cfg.type_spawnpoint: (position_spawnpoint_header, flag_spawnpoint_header),
         }
 
-
     def _read_type_header(self, type_pos, type_name):
         type_head_size = 0x20
         self_pos = type_pos
@@ -44,7 +47,8 @@ class RMPAParse:
         for _ in range(sub_header_num):
             sub_size = 0x20
             sub_current_pos = _ * sub_size + sub_header_block_start_pos + self_pos
-            _unamed_list.append(self._read_sub_header(sub_current_pos, type_name))
+            _unamed_list.append(self._read_sub_header(
+                sub_current_pos, type_name))
             pass
         type_header_dict = {
             cfg.type_group_name: name_str,
@@ -127,11 +131,13 @@ class RMPAParse:
         bytes_ = self._get_content_bytes(route_def_pos, size=rt_size)
         current_route_number = self._get_4bytes_to_uint(0x00, bytes_)
         next_route_count = self._get_4bytes_to_uint(0x04, bytes_)
-        next_route_bind_block_start_pos = self._get_4bytes_to_uint(0x08, bytes_)
+        next_route_bind_block_start_pos = self._get_4bytes_to_uint(
+            0x08, bytes_)
         # next_route_bind_block_end_pos = self._get_4bytes_to_uint(0x10, bytes_)
         route_bind_pos = self_pos + next_route_bind_block_start_pos
         rout_p_size = next_route_count * 0x04
-        route_bind_bytes = self._get_content_bytes(route_bind_pos, size=rout_p_size)
+        route_bind_bytes = self._get_content_bytes(
+            route_bind_pos, size=rout_p_size)
         route_p = [
             self._get_4bytes_to_uint(x, route_bind_bytes)
             for x in range(0, rout_p_size, 4)
@@ -146,15 +152,17 @@ class RMPAParse:
                 extra_sgo_pos + self_pos, size=extra_sgo_size)
             extra_sgo_endian = extra_sgo_bytes[0:4]
             up_code = '<f' if extra_sgo_endian == b'SGO\x00' else '>f'
-            extra_sgo_b64 = struct.unpack(up_code, extra_sgo_bytes[0x28:0x2c])[0]
+            extra_sgo_b64 = struct.unpack(
+                up_code, extra_sgo_bytes[0x28:0x2c])[0]
         else:
             extra_sgo_b64 = 'False'
         # name_str_length = self._get_4bytes_to_uint(0x20, bytes_)
         name_bytes_pos = self._get_4bytes_to_uint(0x24, bytes_)
-        name_str = self._get_string(name_bytes_pos, self_pos) if name_bytes_pos else ''
-        coord = [ 
+        name_str = self._get_string(
+            name_bytes_pos, self_pos) if name_bytes_pos else ''
+        coord = [
             self._get_4bytes_to_float(x, bytes_)
-            for x in range(0x28, 0x34, 4) 
+            for x in range(0x28, 0x34, 4)
         ]
 
         _ddd = {
@@ -207,7 +215,7 @@ class RMPAParse:
 
         sphere_diameter = self._get_4bytes_to_float(0x20, bytes_)
         retangele_extra = self._get_4bytes_to_float(0x24, bytes_)
-        
+
         cylinder_diameter = self._get_4bytes_to_float(0x30, bytes_)
         cylinder_height = self._get_4bytes_to_float(0x34, bytes_)
         _lst = [
@@ -224,22 +232,23 @@ class RMPAParse:
         for type_name, type_data in self._head_dict.items():
             type_head_pos, flag = type_data
             if flag:
-                self._struct[type_name] = self._read_type_header(type_head_pos, type_name)
+                self._struct[type_name] = self._read_type_header(
+                    type_head_pos, type_name)
 
-    def _get_4bytes_to_uint(self, offset:int, data_chunk:bytes = None) -> int:
+    def _get_4bytes_to_uint(self, offset: int, data_chunk: bytes = None) -> int:
         data = data_chunk if data_chunk else self._origin_data
         byte_ = data[offset:offset+4]
         int_ = int.from_bytes(byte_, byteorder=self._byteorder, signed=False)
         return int_
 
-    def _get_4bytes_to_float(self, offset:int, data_chunk:bytes = None) -> float:
+    def _get_4bytes_to_float(self, offset: int, data_chunk: bytes = None) -> float:
         data = data_chunk if data_chunk else self._origin_data
         byte_ = data[offset:offset+4]
         unpack_type = '>f' if self._byteorder == 'big' else '<f'
         float_ = struct.unpack(unpack_type, byte_)[0]
         return float_
 
-    def _get_string(self, offset:int, index:int = 0) -> str:
+    def _get_string(self, offset: int, index: int = 0) -> str:
         end_bytes = b'\x00\x00'
         str_buffer = []
         utf16_byte = b''
@@ -253,8 +262,7 @@ class RMPAParse:
         bytes_ = b''.join(str_buffer)
         return bytes_.decode(encoding=self._encoding)
 
-
-    def _get_content_bytes(self, offset1:int, size:int=0) -> bytes:
+    def _get_content_bytes(self, offset1: int, size: int = 0) -> bytes:
         _data = self._origin_data
         if size:
             _data_r = _data[offset1:offset1+size]
@@ -278,7 +286,7 @@ class RMPAParse:
             input()
             return None
 
-    def generate_json(self, output_path:str):
+    def generate_json(self, output_path: str):
         import json
         # print(_struct)
         self._read_struct()
@@ -287,7 +295,8 @@ class RMPAParse:
 
     def get_all_string(self):
         position_spawnpoint_header = self._get_4bytes_to_uint(0x24)
-        _type_bytes = self._get_content_bytes(position_spawnpoint_header, size=0x20)
+        _type_bytes = self._get_content_bytes(
+            position_spawnpoint_header, size=0x20)
         index = self._get_4bytes_to_uint(0x18, _type_bytes)
         size = len(self._origin_data)
         end_bytes = b'\x00\x00'
@@ -312,27 +321,40 @@ class RMPAParse:
             utf16_byte = b''
         return self._original_str_list
 
+
 def run_main():
-    import sys, time
-    from pathlib import Path
-    if len(sys.argv) == 1:
-        print('RMPA file required!')
-        time.sleep(3)
-        sys.exit()
-    else:
-        file_path = Path(sys.argv[1])
+    args = parse_args()
+    source_path = Path(args.source_path)
 
-    if len(sys.argv) == 3:
-        output_path = Path(sys.argv[2])
+    if args.destination_path:
+        output_path = Path(args.destination_path)
     else:
-        output_path = file_path.with_suffix('.json')
+        output_path = source_path.with_suffix('.json')
 
-    if '.rmpa' == file_path.suffix.lower():
+    if '.rmpa' == source_path.suffix.lower():
         print('working..')
         a = RMPAParse()
-        a.read(file_path)
+        a.read(source_path)
         a.generate_json(output_path)
         print('done!')
+
+
+def parse_args():
+    description = 'rmpa file parser'
+    parse = argparse.ArgumentParser(description=description)
+
+    help_ = 'input rmpa file path'
+    parse.add_argument('source_path', help=help_)
+    help_ = 'output json file path'
+    parse.add_argument('destination_path', help=help_, nargs='?')
+
+    help_ = 'enable debug mode'
+    parse.add_argument('-d', '--debug', help=help_,
+                       action='store_true', default=False)
+    parse.add_argument('-t', action='store_true')
+
+    return parse.parse_args()
+
 
 if __name__ == "__main__":
     run_main()

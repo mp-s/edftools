@@ -102,7 +102,7 @@ class RABExtract:
         bytes_ = b''.join(str_buffer)
         return bytes_.decode(encoding=self._encoding)
 
-    def _read_contents_size(self, position, size):
+    def _read_contents_size(self, position, size) -> bytes:
         return self._file_mmap[position:position+size]
 
 
