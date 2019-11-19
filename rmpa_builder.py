@@ -3,17 +3,18 @@ import json
 import struct
 from pathlib import Path
 
-import rmpa_config as cfg
+# import rmpa_config as cfg
+from rmpa_config import cfg
 
 
 class RMPAGenerate:
 
-    def __init__(self, file_path, *args, **kwargs):
+    def __init__(self, file_path, debug_flag, *args, **kwargs):
         super().__init__(*args, **kwargs)
         with open(file_path, 'r', encoding='utf-8') as f:
             self._data_dict = json.load(f)
-        self.pre = RMPAJsonPreprocess(self._data_dict)
-        self.debug_flag = False
+        self.pre = RMPAJsonPreprocess(self._data_dict, debug_flag)
+        self._debug_flag = debug_flag
 
     def _build_type_block(self, type_name, type_dict):
         #  子头个数
@@ -326,10 +327,39 @@ class RMPAGenerate:
             f.write(self.pre.name_table_bytes)
 
 
+class TypeWayPoint:
+    def __init__(self, dict_: dict):
+        super().__init__()
+        self.name = dict_.get(cfg.base_name)
+        self.waypoint_postion = dict_.get(cfg.route_position)
+        self.waypoint_width = dict_.get(cfg.waypoint_width)
+        self.waypoint_number = dict_.get(cfg.route_number)
+        self.waypoint_next_route_list = dict_.get(cfg.route_next_block)
+
+
+class TypeShape:
+    def __init__(self, dict_: dict):
+        super().__init__()
+        self.name = dict_.get(cfg.shape_variable_name)
+        self.shape_type = dict_.get(cfg.shape_type_name)
+        self.shape_size_data = dict_.get(cfg.shape_position_data)
+
+
+class TypeSpawnPoint:
+    def __init__(self, dict_: dict):
+        super().__init__()
+        self.name = dict_.get(cfg.base_name)
+        # position? object?
+        self.is_at_position = dict_.get(cfg.spawnpoint_pos_1)
+        # target? point of view?
+        self.look_at_position = dict_.get(cfg.spawnpoint_pos_2)
+
+
 class RMPAJsonPreprocess:
-    def __init__(self, json_dict, *args, **kwargs):
+    def __init__(self, json_dict, debug_flag, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._json_dict = json_dict
+        self._debug_flag = debug_flag
 
         self._name_str_tbl = {}
         self.name_byte_list = []
@@ -359,7 +389,8 @@ class RMPAJsonPreprocess:
         self.spawnpoint_block_size = self.type_block_size_predict('spawnpoint')
         abs_pos_start = _1_rmpa_header + self.route_block_size +\
             self.shape_block_size + self.spawnpoint_block_size
-        print('first name offset: ', hex(abs_pos_start))
+        if self._debug_flag:
+            print('first name offset: ', hex(abs_pos_start))
         return abs_pos_start
 
     def type_block_size_predict(self, type_name) -> int:
@@ -420,11 +451,13 @@ class RMPAJsonPreprocess:
     def _read_list(self, type_name: str, list_: list):
         list_count = len(list_)
         if 'sub' in type_name:
-            print('current sub header count:', list_count)
+            if self._debug_flag:
+                print('current sub header count:', list_count)
             self._sub_header_count += list_count
         elif 'base' in type_name:
-            print('current base data count:', list_count)
-            print(self._node_type_name)
+            if self._debug_flag:
+                print('current base data count:', list_count)
+                print(self._node_type_name)
             sub_groups_base = self.base_data_count_table.get(
                 self._node_type_name, [])
             sub_groups_base.append(list_count)
@@ -457,7 +490,7 @@ def test_preprocess():
     with open(r'D:\arena\EARTH DEFENSE FORCE 5\r\MISSION\DLC\DM024\MISSION.json', 'r', encoding='utf-8') as f:
         jsonstr = f.read()
     q = json.loads(jsonstr)
-    p = RMPAJsonPreprocess(q)
+    p = RMPAJsonPreprocess(q, debug_flag=True)
 
 
 def main():
@@ -471,7 +504,7 @@ def main():
 
     if '.json' == source_path.suffix.lower():
         print('working..')
-        a = RMPAGenerate(source_path)
+        a = RMPAGenerate(source_path, args.debug)
         a.run(output_path)
         print('done!')
 

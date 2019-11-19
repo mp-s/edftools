@@ -3,8 +3,8 @@ import base64
 import struct
 from pathlib import Path
 
-import rmpa_config as cfg
-
+# import rmpa_config as cfg
+from rmpa_config import cfg
 
 class RMPAParse:
 
@@ -333,7 +333,7 @@ def run_main():
 
     if '.rmpa' == source_path.suffix.lower():
         print('working..')
-        a = RMPAParse()
+        a = RMPAParse(debug_flag=args.debug)
         a.read(source_path)
         a.generate_json(output_path)
         print('done!')

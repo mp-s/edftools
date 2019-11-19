@@ -302,7 +302,7 @@ def run_main():
 
     if '.bvm' == source_path.suffix.lower():
         print('working...')
-        bvm_ = BvmData(source_path)
+        bvm_ = BvmData(source_path, debug=args.debug)
         with output_path.open(mode='w', encoding='utf-8') as f:
             f.write(bvm_.output_data())
         print('done!')

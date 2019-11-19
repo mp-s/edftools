@@ -473,7 +473,7 @@ def run_main():
 
     if source_path.suffix.lower() in ('.asm', '.txt'):
         print('working...')
-        bvm_from_asm = BVMGenerate()
+        bvm_from_asm = BVMGenerate(debug_flag=args.debug)
         bvm_from_asm.read(source_path)
         bvm_from_asm.build_file(output_path)
         print('done!')
