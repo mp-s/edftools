@@ -140,7 +140,7 @@ class BvmData:
                     if opcode_asm == 'cuscall0':
                         comments = call_func_types.get(operand_str, None)
                 elif opcode_asm in operands_use_offset:
-                    operand_int = int(self._convert_operand(operand, operand_len))
+                    operand_int = int(self._convert_operand2(operand, operand_len))
                     mark_offset = _opcode_offset + operand_int
                     operand_str = f'location_{mark_offset}'
                     self._asm_jmp_mark[mark_offset] = f'\n{operand_str} :'
@@ -249,6 +249,9 @@ class BvmData:
             str_buffer.clear()
             utf16_byte = b''
         return str_list
+
+    def _convert_operand2(self, bytes_: bytes, bytes_length: int) -> str:
+        return int.from_bytes(bytes_, byteorder=self._byteorder, signed=True)
 
     def _convert_operand(self, bytes_:bytes, bytes_length:int) -> str:
         '''
