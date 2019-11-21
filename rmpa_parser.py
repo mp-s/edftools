@@ -4,7 +4,7 @@ import struct
 from pathlib import Path
 
 import common_utils as util
-from rmpa_config import cfg, TypeSpawnPoint,TypeShape
+from rmpa_config import cfg, TypeSpawnPoint, TypeShape
 
 
 class RMPAParse:
@@ -192,7 +192,8 @@ class RMPAParse:
         shape = TypeShape(self._byteorder)
         shape.from_bytes_block(bytes_)
         shape.name = self._get_string(shape.name_in_rmpa_pos, self_pos)
-        shape.shape_type = self._get_string(shape.shape_type_in_rmpa_pos, self_pos)
+        shape.shape_type = self._get_string(
+            shape.shape_type_in_rmpa_pos, self_pos)
         shape_data_block_abs_pos = self_pos + shape.size_data_in_rmpa_pos
         size_bytes = self._get_content_bytes(shape_data_block_abs_pos, 0x40)
         shape.from_bytes_block_size_data(size_bytes)
@@ -220,6 +221,7 @@ class RMPAParse:
     def _read_shape_data(self, shape_pos):
         shape_data_size = 0x40
         bytes_ = self._get_content_bytes(shape_pos, size=shape_data_size)
+
         def g_float(pos):
             return self._get_4bytes_to_float(pos, bytes_)
         pos_x = g_float(0x00)
@@ -337,15 +339,16 @@ class RMPAParse:
             utf16_byte = b''
         return self._original_str_list
 
+
 class RmpaHeader:
-    def __init__(self, header_data:bytes):
+    def __init__(self, header_data: bytes):
         super().__init__()
         self._block_data = header_data
-    
+
     def parse_block(self):
         data = self._block_data
         uint_be = util.uint_from_4bytes_big
-        get_uint = lambda pos: uint_be(util.get_4bytes(data, pos))
+        def get_uint(pos): return uint_be(util.get_4bytes(data, pos))
         self.flag_route = get_uint(0x08)
         self.flag_shape = get_uint(0x10)
         self.flag_camera = get_uint(0x18)
@@ -363,9 +366,15 @@ class RmpaHeader:
             cfg.type_spawnpoint: (self.pos_spawnpoint, self.flag_spawnpoint),
         }
 
+
 def run_main():
     args = parse_args()
-    source_path = Path(args.source_path)
+
+    if args.source_path is None:
+        str_ = input('drag file here and press Enter: ')
+        source_path = Path(str_.strip('"'))
+    else:
+        source_path = Path(args.source_path)
 
     if args.destination_path:
         output_path = Path(args.destination_path)
@@ -385,7 +394,7 @@ def parse_args():
     parse = argparse.ArgumentParser(description=description)
 
     help_ = 'input rmpa file path'
-    parse.add_argument('source_path', help=help_)
+    parse.add_argument('source_path', help=help_, nargs='?')
     help_ = 'output json file path'
     parse.add_argument('destination_path', help=help_, nargs='?')
 

@@ -464,7 +464,12 @@ class BVMGenerate(object):
 
 def run_main():
     args = parse_args()
-    source_path = Path(args.source_path)
+
+    if args.source_path is None:
+        str_ = input('drag file here and press Enter: ')
+        source_path = Path(str_.strip('"'))
+    else:
+        source_path = Path(args.source_path)
 
     if args.destination_path:
         output_path = Path(args.destination_path)
@@ -484,7 +489,7 @@ def parse_args():
     parse = argparse.ArgumentParser(description=description)
 
     help_ = 'input asm or txt file path'
-    parse.add_argument('source_path', help=help_)
+    parse.add_argument('source_path', help=help_, nargs='?')
     help_ = 'output bvm file path'
     parse.add_argument('destination_path', help=help_, nargs='?')
 

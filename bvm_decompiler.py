@@ -148,7 +148,7 @@ class BvmData:
                         comments = mdl.call_func_types.get(operand_str, None)
                 elif opcode_asm in operands_use_offset:
                     operand_int = int(
-                        self._convert_operand(operand, operand_len))
+                        self._convert_operand2(operand, operand_len))
                     mark_offset = _opcode_offset + operand_int
                     operand_str = f'location_{mark_offset}'
                     self._asm_jmp_mark[mark_offset] = f'\n{operand_str} :'
@@ -238,6 +238,9 @@ class BvmData:
             utf16_byte = b''
         return str_list
 
+    def _convert_operand2(self, bytes_: bytes, bytes_length: int) -> str:
+        return int.from_bytes(bytes_, byteorder=self._byteorder, signed=True)
+
     def _convert_operand(self, bytes_: bytes, bytes_length: int) -> str:
         '''
         signed-int or float
@@ -298,7 +301,12 @@ class BvmData:
 
 def run_main():
     args = parse_args()
-    source_path = Path(args.source_path)
+
+    if args.source_path is None:
+        str_ = input('drag file here and press Enter: ')
+        source_path = Path(str_.strip('"'))
+    else:
+        source_path = Path(args.source_path)
 
     if args.destination_path:
         output_path = Path(args.destination_path)
@@ -318,7 +326,7 @@ def parse_args():
     parse = argparse.ArgumentParser(description=description)
 
     help_ = 'input bvm file path'
-    parse.add_argument('source_path', help=help_)
+    parse.add_argument('source_path', help=help_, nargs='?')
     help_ = 'output asm file path'
     parse.add_argument('destination_path', help=help_, nargs='?')
 
