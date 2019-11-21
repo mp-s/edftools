@@ -1,4 +1,7 @@
 #! python3
+import common_utils as util
+
+
 class Config:
     AMAZING_EXTRA_BIN_HEAD = b'SGO\x00\x02\x01\x00\x00\x01\x00\x00\x00 \x00\x00\x00\x01\x00\x00\x00,\x00\x00\x00\x00\x00\x00\x004\x00\x00\x00\x02\x00\x00\x00\x04\x00\x00\x00'
     AMAZING_EXTRA_BIN_FOOT = b'\x08\x00\x00\x00\x00\x00\x00\x00r\x00m\x00p\x00a\x00_\x00f\x00l\x00o\x00a\x00t\x00_\x00W\x00a\x00y\x00P\x00o\x00i\x00n\x00t\x00W\x00i\x00d\x00t\x00h\x00\x00\x00'
@@ -43,4 +46,112 @@ class Config:
     # header groups
     compose_header = [type_route, type_shape, type_camera, type_spawnpoint]
 
+
 cfg = Config
+
+
+class TypeWayPoint:
+    def __init__(self, debug_flag: bool = False):
+        super().__init__()
+        self._debug_flag = debug_flag
+
+    def from_dict(self, dict_: dict):
+        self.name = dict_.get(cfg.base_name)
+        self.waypoint_postion = dict_.get(cfg.route_position)
+        self.waypoint_width = dict_.get(cfg.waypoint_width)
+        self.waypoint_number = dict_.get(cfg.route_number)
+        self.waypoint_next_route_list = dict_.get(cfg.route_next_block)
+
+    def from_bytes_block(self, block: bytes):
+
+        pass
+
+
+class TypeShape:
+    def __init__(self, byteorder, debug_flag: bool = False):
+        super().__init__()
+        self._debug_flag = debug_flag
+        self._byteorder = byteorder
+
+    def from_dict(self, dict_: dict):
+        dg = dict_.get
+        self.name = dg(cfg.shape_variable_name)
+        self.shape_type = dg(cfg.shape_type_name)
+
+        self.shape_size_data = dg(cfg.shape_position_data)
+
+    def from_bytes_block(self, block: bytes):
+        if len(block) != 0x30:
+            return None
+
+        def g_p(pos: int) -> int:
+            return util.uint_from_4bytes(util.get_4bytes(block, pos), self._byteorder)
+        self.name = None
+        self.shape_type = None
+        self.name_in_rmpa_pos = g_p(0x10)
+        self.shape_type_in_rmpa_pos = g_p(0x08)
+        self.size_data_in_rmpa_pos = g_p(0x24)
+
+    def from_bytes_block_size_data(self, block: bytes):
+        if len(block) != 0x40:
+            return None
+
+        def g_f(pos: int) -> float:
+            return util.float_from_4bytes(
+                util.get_4bytes(block, pos), byteorder=self._byteorder)
+
+        self.position = [g_f(0x00), g_f(0x04), g_f(0x08)]
+        self.rectangle_size = [g_f(0x10), g_f(0x14), g_f(0x18)]
+        self.rectangle_extra = g_f(0x24)
+        self.shape_diameter = g_f(0x30)
+        self.shape_height = g_f(0x34)
+        self.shape_size_data = [
+            self.position[0], self.position[1], self.position[2],
+            self.rectangle_size[0], self.rectangle_size[1], self.rectangle_size[2],
+            0.0, self.rectangle_extra,
+            self.shape_diameter, self.shape_height,
+        ]
+
+    def generate_dict(self):
+        return {
+            Config.shape_type_name: self.shape_type,
+            Config.shape_variable_name: self.name,
+            Config.shape_position_data: self.shape_size_data,
+        }
+
+
+class TypeSpawnPoint:
+    def __init__(self, byteorder, debug_flag: bool = False):
+        super().__init__()
+        self._debug_flag = debug_flag
+        self._byteorder = byteorder
+
+    def from_dict(self, dict_: dict):
+        dg = dict_.get
+        self.name = dg(cfg.base_name)
+        # position? object?
+        self.is_at_position = dg(cfg.spawnpoint_pos_1)
+        # target? point of view?
+        self.look_at_position = dg(cfg.spawnpoint_pos_2)
+
+    def from_bytes_block(self, block: bytes):
+        if len(block) != 0x40:
+            return None
+
+        def g_f(pos: int) -> float:
+            return util.float_from_4bytes(
+                util.get_4bytes(block, pos), byteorder=self._byteorder)
+        self.is_at_position = [g_f(0x0c), g_f(0x10), g_f(0x14)]
+        self.look_at_position = [g_f(0x1c), g_f(0x20), g_f(0x24)]
+        self.name_in_rmpa_position = util.int_from_4bytes_big(
+            util.get_4bytes(block, 0x34))
+        self.name = None
+
+    def generate_dict(self):
+        if not self.name:
+            return dict()
+        return {
+            Config.base_name: self.name,
+            Config.spawnpoint_pos_1: self.is_at_position,
+            Config.spawnpoint_pos_2: self.look_at_position,
+        }

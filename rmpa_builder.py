@@ -9,7 +9,7 @@ from rmpa_config import cfg
 
 class RMPAGenerate:
 
-    def __init__(self, file_path, debug_flag, *args, **kwargs):
+    def __init__(self, file_path, debug_flag: bool = False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         with open(file_path, 'r', encoding='utf-8') as f:
             self._data_dict = json.load(f)
@@ -327,36 +327,8 @@ class RMPAGenerate:
             f.write(self.pre.name_table_bytes)
 
 
-class TypeWayPoint:
-    def __init__(self, dict_: dict):
-        super().__init__()
-        self.name = dict_.get(cfg.base_name)
-        self.waypoint_postion = dict_.get(cfg.route_position)
-        self.waypoint_width = dict_.get(cfg.waypoint_width)
-        self.waypoint_number = dict_.get(cfg.route_number)
-        self.waypoint_next_route_list = dict_.get(cfg.route_next_block)
-
-
-class TypeShape:
-    def __init__(self, dict_: dict):
-        super().__init__()
-        self.name = dict_.get(cfg.shape_variable_name)
-        self.shape_type = dict_.get(cfg.shape_type_name)
-        self.shape_size_data = dict_.get(cfg.shape_position_data)
-
-
-class TypeSpawnPoint:
-    def __init__(self, dict_: dict):
-        super().__init__()
-        self.name = dict_.get(cfg.base_name)
-        # position? object?
-        self.is_at_position = dict_.get(cfg.spawnpoint_pos_1)
-        # target? point of view?
-        self.look_at_position = dict_.get(cfg.spawnpoint_pos_2)
-
-
 class RMPAJsonPreprocess:
-    def __init__(self, json_dict, debug_flag, *args, **kwargs):
+    def __init__(self, json_dict, debug_flag: bool = False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._json_dict = json_dict
         self._debug_flag = debug_flag

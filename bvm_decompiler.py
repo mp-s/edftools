@@ -10,8 +10,8 @@ class BvmData:
     jmp_loc_count = 0
     # 添加debug参数, 减少不必要噪音
 
-    def __init__(self, file_path: str, debug: int = False):
-        self._debug_mode = debug
+    def __init__(self, file_path: str, debug_flag: bool = False):
+        self._debug_mode = debug_flag
         with open(file_path, 'rb') as f:
             self.data = f.read()
         if (self.data[0:4] == b'BVM '):
@@ -218,6 +218,7 @@ class BvmData:
         return '\n'.join(out_buffer)
 
     def get_all_str(self):
+        '''debug test'''
         index = self._get_offset('string_chunk_index')
         size = self._get_offset('class_name_index')
         end_bytes = b'\x00\x00'
@@ -239,19 +240,28 @@ class BvmData:
 
     def _convert_operand(self, bytes_: bytes, bytes_length: int) -> str:
         '''
-        signed int or
-        float
+        signed-int or float
         '''
-        enum_length = {
-            1: '<b',
-            2: '<h',
-            4: '<f',
-        } if self._byteorder == 'little' else {
-            1: '>b',
-            2: '>h',
-            4: '>f',
-        }
-        unpack_type = enum_length.get(bytes_length)
+        # enum_length = {
+        #     1: '<b',
+        #     2: '<h',
+        #     4: '<f',
+        # } if self._byteorder == 'little' else {
+        #     1: '>b',
+        #     2: '>h',
+        #     4: '>f',
+        # }
+
+        def get_unpack_type(length: int) -> str:
+            if self._byteorder == 'little':
+                p1 = '<'
+            else:
+                p1 = '>'
+            p2 = {1: 'b',
+                  2: 'h',
+                  4: 'f'}
+            return p1 + p2.get(length)
+        unpack_type = get_unpack_type(bytes_length)
         str_ = str(struct.unpack(unpack_type, bytes_)[0])
         if bytes_length == 4:
             str_ = f'{str_}f'
@@ -261,15 +271,10 @@ class BvmData:
         end_bytes = b'\x00\x00'
         str_buffer = []
         utf16_byte = b''
-        offset = self._get_int(offset)
-
-        if index:
-            _data = self.data[index:]
-        else:
-            _data = self.data
+        offset = self._get_int(offset) + index
 
         while(end_bytes != utf16_byte):
-            utf16_byte = _data[offset:offset+2]
+            utf16_byte = self.data[offset:offset+2]
             if end_bytes == utf16_byte:
                 break
             str_buffer.append(utf16_byte)
@@ -302,7 +307,7 @@ def run_main():
 
     if '.bvm' == source_path.suffix.lower():
         print('working...')
-        bvm_ = BvmData(source_path, debug=args.debug)
+        bvm_ = BvmData(source_path, debug_flag=args.debug)
         with output_path.open(mode='w', encoding='utf-8') as f:
             f.write(bvm_.output_data())
         print('done!')
