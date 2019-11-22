@@ -3,24 +3,25 @@ import common_utils as util
 
 
 class Config:
-    AMAZING_EXTRA_BIN_HEAD = b'SGO\x00\x02\x01\x00\x00\x01\x00\x00\x00 \x00\x00\x00\x01\x00\x00\x00,\x00\x00\x00\x00\x00\x00\x004\x00\x00\x00\x02\x00\x00\x00\x04\x00\x00\x00'
-    AMAZING_EXTRA_BIN_FOOT = b'\x08\x00\x00\x00\x00\x00\x00\x00r\x00m\x00p\x00a\x00_\x00f\x00l\x00o\x00a\x00t\x00_\x00W\x00a\x00y\x00P\x00o\x00i\x00n\x00t\x00W\x00i\x00d\x00t\x00h\x00\x00\x00'
-    AMZING_EXTRA_SIZE = 0x66
-    AMAZING_EXTRA_SIZE_ALIGNED = 0x70
+    extra_sgo_head = b'SGO\x00\x02\x01\x00\x00\x01\x00\x00\x00 \x00\x00\x00\x01\x00\x00\x00,\x00\x00\x00\x00\x00\x00\x004\x00\x00\x00\x02\x00\x00\x00\x04\x00\x00\x00'
+    extra_sgo_foot = b'\x08\x00\x00\x00\x00\x00\x00\x00r\x00m\x00p\x00a\x00_\x00f\x00l\x00o\x00a\x00t\x00_\x00W\x00a\x00y\x00P\x00o\x00i\x00n\x00t\x00W\x00i\x00d\x00t\x00h\x00\x00\x00'
+    extra_sgo_size = 0x66
+    extra_sgo_size_aligned = 0x70
 
-    type_group_name = 'type group name'
+    type_group_name = 'type group Name'
     sub_enum_groups = 'sub groups'
 
     # sub enum group
-    sub_enum_name = 'sub group name'
-    base_data_list = 'base data'
+    sub_enum_name = 'sub Enum Group Name'
+    base_data_list = 'base Data'
 
     # types
     type_route = 'route'
-    route_number = 'route number'
+    route_number = 'WayPointNumber'
     route_position = 'positions'
-    route_next_block = "current->next number"
+    route_next_block = "nextWayPointNumberList"
     waypoint_width = 'rmpa_float_WayPointWidth'
+    empty_waypoint_width = 'empty'
 
     type_shape = 'shape'
     shape_type_name = 'shape type name'
@@ -29,14 +30,14 @@ class Config:
 
     type_camera = 'camera'
 
-    type_spawnpoint = 'spawnpoint'
+    type_spawnpoint = 'SpawnPoint'
     base_name = 'name'
     spawnpoint_pos_1 = 'positions_1'
     spawnpoint_pos_2 = 'positions_2'
 
     # debug
-    type_chunk_end_position = 'type_chunk_end_position'
-    current_block_position = 'block position'
+    type_chunk_end_position = 'typeChunkEndOffset'
+    current_block_position = 'blockInRmpaOffset'
     sub_header_count = 'numbers of enum sub header'
     base_data_count = 'base type count'
     route_next_block_pos = 'next blocks pos'
@@ -130,9 +131,13 @@ class TypeSpawnPoint:
         dg = dict_.get
         self.name = dg(cfg.base_name)
         # position? object?
-        self.is_at_position = dg(cfg.spawnpoint_pos_1)
+        is_at_pos = dg(cfg.spawnpoint_pos_1)
+        if isinstance(is_at_pos, list) and len(is_at_pos) == 3:
+            self.is_at_position = list(map(float, is_at_pos))
         # target? point of view?
-        self.look_at_position = dg(cfg.spawnpoint_pos_2)
+        look_at_pos = dg(cfg.spawnpoint_pos_2)
+        if isinstance(look_at_pos, list) and len(look_at_pos) == 3:
+            self.look_at_position = list(map(float, look_at_pos))
 
     def from_bytes_block(self, block: bytes):
         if len(block) != 0x40:
@@ -143,11 +148,11 @@ class TypeSpawnPoint:
                 util.get_4bytes(block, pos), byteorder=self._byteorder)
         self.is_at_position = [g_f(0x0c), g_f(0x10), g_f(0x14)]
         self.look_at_position = [g_f(0x1c), g_f(0x20), g_f(0x24)]
-        self.name_in_rmpa_position = util.int_from_4bytes_big(
-            util.get_4bytes(block, 0x34))
+        self.name_in_rmpa_position = util.int_from_4bytes(
+            util.get_4bytes(block, 0x34), self._byteorder)
         self.name = None
 
-    def generate_dict(self):
+    def to_dict(self):
         if not self.name:
             return dict()
         return {
@@ -155,3 +160,18 @@ class TypeSpawnPoint:
             Config.spawnpoint_pos_1: self.is_at_position,
             Config.spawnpoint_pos_2: self.look_at_position,
         }
+
+    def to_bytes_block(self):
+        def i_b(num: float) -> bytes:
+            return util.float_to_4bytes(num, self._byteorder)
+        name_pos_bytes = util.int_to_4bytes(
+            self.name_in_rmpa_position, self._byteorder)
+        is_x, is_y, is_z = tuple(map(i_b, self.is_at_position))
+        look_x, look_y, look_z = tuple(map(i_b, self.look_at_position))
+        blk_bytes = b''.join([
+            bytes(0x0c), is_x,
+            is_y, is_z, bytes(4), look_x,
+            look_y, look_z, bytes(0x0c),
+            name_pos_bytes, bytes(0x08)
+        ])
+        return blk_bytes

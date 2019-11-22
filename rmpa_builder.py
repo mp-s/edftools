@@ -241,18 +241,18 @@ class RMPAGenerate:
                 # next_route_block_end_pos = next_route_block_start_pos + next_route_block_align_size
                 # 5
                 # sgo_start_pos = next_route_block_end_pos    # extra sgo process
-                sgo_size = cfg.AMZING_EXTRA_SIZE   # padding data
+                sgo_size = cfg.extra_sgo_size   # padding data
                 rmpa_waypoint_width = base_data_table.get(cfg.waypoint_width)
-                if str(rmpa_waypoint_width).lower() != 'false':
+                if str(rmpa_waypoint_width).lower() != cfg.empty_waypoint_width:
                     no_sgo_flag = False
                     rmpa_waypoint_width = float(rmpa_waypoint_width)
                     width_bytes = struct.pack('<f', rmpa_waypoint_width)
                     extra_sgo_bytes = b''.join([
-                        cfg.AMAZING_EXTRA_BIN_HEAD,
+                        cfg.extra_sgo_head,
                         width_bytes,
-                        cfg.AMAZING_EXTRA_BIN_FOOT,
-                        bytes(cfg.AMAZING_EXTRA_SIZE_ALIGNED -
-                              cfg.AMZING_EXTRA_SIZE)
+                        cfg.extra_sgo_foot,
+                        bytes(cfg.extra_sgo_size_aligned -
+                              cfg.extra_sgo_size)
                     ])
                 else:
                     # padding zero
@@ -266,16 +266,24 @@ class RMPAGenerate:
                 if no_sgo_flag:
                     extra_sgo_info_bytes = bytes(8)
                 else:
-                    extra_sgo_info_bytes = int_to_4bytes(cfg.AMZING_EXTRA_SIZE) +\
+                    extra_sgo_info_bytes = int_to_4bytes(cfg.extra_sgo_size) +\
                         int_to_4bytes(_next_route_blk_end_pos)
                 route_block_bytes = b''.join([
-                    int_to_4bytes(route_number), int_to_4bytes(next_route_count), int_to_4bytes(
-                        _extra_one_start_pos), bytes(4),   # 0x00
-                    int_to_4bytes(_next_route_blk_end_pos), bytes(
-                        4), extra_sgo_info_bytes,     # 0x10
-                    bytes(4), int_to_4bytes(
-                        route_name_pos), route_pos_bytes,   # 0x20 ~ 0x34
-                    bytes(8)    # 0x34 ~
+                    # 0x00
+                    int_to_4bytes(route_number),
+                    int_to_4bytes(next_route_count),
+                    int_to_4bytes(_extra_one_start_pos),
+                    bytes(4),
+                    # 0x10
+                    int_to_4bytes(_next_route_blk_end_pos),
+                    bytes(4),
+                    extra_sgo_info_bytes,
+                    # 0x20 ~ 0x34
+                    bytes(4),
+                    int_to_4bytes(route_name_pos),
+                    route_pos_bytes,
+                    # 0x34 ~
+                    bytes(8)
                 ])
                 route_extra_latest_end_pos += len(_route_extra_bytes)
                 _main_group_data_list.append(route_block_bytes)
@@ -301,7 +309,7 @@ class RMPAGenerate:
             k = _t_n
             v = self._data_dict.get(_t_n)
             some_header_pos.append(some_header_start_pos)
-            if v is None or k == 'camera':
+            if v is None or k == cfg.type_camera:
                 some_flags.append(0)
                 continue
             block_bytes = self._build_type_block(k, v)
@@ -356,9 +364,10 @@ class RMPAJsonPreprocess:
     def _name_pos_prediction(self) -> int:
         _1_rmpa_header = 0x30
 
-        self.route_block_size = self.type_block_size_predict('route')
-        self.shape_block_size = self.type_block_size_predict('shape')
-        self.spawnpoint_block_size = self.type_block_size_predict('spawnpoint')
+        self.route_block_size = self.type_block_size_predict(cfg.type_route)
+        self.shape_block_size = self.type_block_size_predict(cfg.type_shape)
+        self.spawnpoint_block_size = self.type_block_size_predict(
+            cfg.type_spawnpoint)
         abs_pos_start = _1_rmpa_header + self.route_block_size +\
             self.shape_block_size + self.spawnpoint_block_size
         if self._debug_flag:
@@ -371,11 +380,11 @@ class RMPAJsonPreprocess:
             return 0
         type_header_size = 0x20
         sub_header_size = 0x20 * len(type_sub_groups_count_list)
-        if type_name == 'shape':
+        if type_name == cfg.type_shape:
             sub_data_size = (0x30 + 0x40) * sum(type_sub_groups_count_list)
-        elif type_name == 'spawnpoint':
+        elif type_name == cfg.type_spawnpoint:
             sub_data_size = 0x40 * sum(type_sub_groups_count_list)
-        elif type_name == 'route':
+        elif type_name == cfg.type_route:
             # sub_data_size = 0x3c * sum(type_sub_groups_count_list)
             sub_data_size = 0
             for route_base_count in type_sub_groups_count_list:
@@ -395,11 +404,14 @@ class RMPAJsonPreprocess:
 
     def _route_type_extra_blk_propress(self, base_data_list: list):
         for route_item in base_data_list:
-            next_list = route_item.get('current->next number')
-            extra_sgo = route_item.get("rmpa_float_WayPointWidth")
+            next_list = route_item.get(cfg.route_next_block)
+            extra_sgo = route_item.get(cfg.waypoint_width)
             list_length = len(next_list)
             next_route_blk_size = (3 + list_length) // 4 * 4 * 0x04
-            extra_sgo_size = 0 if str(extra_sgo).lower() == 'false' else 0x70
+            if str(extra_sgo).lower() == cfg.empty_waypoint_width:
+                extra_sgo_size = 0
+            else:
+                extra_sgo_size = 0x70
             extra_size = next_route_blk_size + extra_sgo_size
             self._route_extra_data_size_list.append(extra_size)
 
@@ -434,7 +446,7 @@ class RMPAJsonPreprocess:
                 self._node_type_name, [])
             sub_groups_base.append(list_count)
             self.base_data_count_table[self._node_type_name] = sub_groups_base
-            if self._node_type_name == 'route':
+            if self._node_type_name == cfg.type_route:
                 self._route_type_extra_blk_propress(list_)
                 pass
         for item in list_:

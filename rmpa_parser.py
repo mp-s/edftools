@@ -92,7 +92,7 @@ class RMPAParse:
         sp = TypeSpawnPoint(self._byteorder)
         sp.from_bytes_block(bytes_)
         sp.name = self._get_string(sp.name_in_rmpa_position, self_pos)
-        _ld = sp.generate_dict()
+        _ld = sp.to_dict()
         return _ld
 
     def _read_routes(self, route_def_pos):
@@ -125,7 +125,7 @@ class RMPAParse:
             extra_sgo_b64 = struct.unpack(
                 up_code, extra_sgo_bytes[0x28:0x2c])[0]
         else:
-            extra_sgo_b64 = 'False'
+            extra_sgo_b64 = cfg.empty_waypoint_width
         # name_str_length = self._get_4bytes_to_uint(0x20, bytes_)
         name_bytes_pos = self._get_4bytes_to_uint(0x24, bytes_)
         name_str = self._get_string(
