@@ -18,22 +18,6 @@ class RMPAParse:
         h = RmpaHeader(header_data)
         h.parse_block()
         self._head_dict = h.generate_dict()
-        # self._filesize = len(self._origin_data)
-        # flag_route_header = self._get_4bytes_to_uint(0x08)
-        # flag_shape_header = self._get_4bytes_to_uint(0x10)
-        # flag_camera_header = self._get_4bytes_to_uint(0x18)
-        # flag_spawnpoint_header = self._get_4bytes_to_uint(0x20)
-
-        # position_route_header = self._get_4bytes_to_uint(0x0C)
-        # position_shape_header = self._get_4bytes_to_uint(0x14)
-        # position_camera_header = self._get_4bytes_to_uint(0x1C)
-        # position_spawnpoint_header = self._get_4bytes_to_uint(0x24)
-        # self._head_dict = {
-        #     cfg.type_route: (position_route_header, flag_route_header),
-        #     cfg.type_shape: (position_shape_header, flag_shape_header),
-        #     cfg.type_camera: (position_camera_header, flag_camera_header),
-        #     cfg.type_spawnpoint: (position_spawnpoint_header, flag_spawnpoint_header),
-        # }
 
     def _read_type_header(self, type_pos, type_name):
         type_head_size = 0x20
@@ -109,27 +93,6 @@ class RMPAParse:
         sp.from_bytes_block(bytes_)
         sp.name = self._get_string(sp.name_in_rmpa_position, self_pos)
         _ld = sp.generate_dict()
-        # # sub_group_end_pos = self._get_4bytes_to_uint(0x04, data_chunk=bytes_)
-        # # rmpa_identifier = self._get_4bytes_to_uint(0x08, data_chunk=bytes_)
-        # coord = [
-        #     self._get_4bytes_to_float(x, data_chunk=bytes_)
-        #     for x in range(0x0c, 0x18, 4)
-        # ]
-        # sec_coord = [
-        #     self._get_4bytes_to_float(x, data_chunk=bytes_)
-        #     for x in range(0x1c, 0x28, 4)
-        # ]
-        # # name_str_length = self._get_4bytes_to_uint(0x30, data_chunk=bytes_)
-        # name_str_pos = self._get_4bytes_to_uint(0x34, data_chunk=bytes_)
-        # name_str = self._get_string(name_str_pos, self_pos)
-
-        # _ld = {
-        #     cfg.base_name: name_str,
-        #     cfg.spawnpoint_pos_1: coord,
-        #     cfg.spawnpoint_pos_2: sec_coord,
-        # }
-        # if self._debug_flag:
-        #     _ld[cfg.current_block_position] = hex(self_pos)
         return _ld
 
     def _read_routes(self, route_def_pos):
@@ -199,50 +162,7 @@ class RMPAParse:
         shape.from_bytes_block_size_data(size_bytes)
         _ldd = shape.generate_dict()
 
-        # # shape_type_name_length = self._get_4bytes_to_uint(0x04, bytes_)
-        # shape_type_name_pos = self._get_4bytes_to_uint(0x08, bytes_)
-        # shape_type_name_str = self._get_string(shape_type_name_pos, self_pos)
-        # # shape_var_name_length = self._get_4bytes_to_uint(0x0c, bytes_)
-        # shape_var_name_pos = self._get_4bytes_to_uint(0x10, bytes_)
-        # shape_var_name_str = self._get_string(shape_var_name_pos, self_pos)
-        # shape_data_pos = self._get_4bytes_to_uint(0x24, bytes_)
-        # shape_data_abs_pos = shape_data_pos + self_pos
-        # shape_data_list = self._read_shape_data(shape_data_abs_pos)
-        # _ldd = {
-        #     cfg.shape_type_name: shape_type_name_str,
-        #     cfg.shape_variable_name: shape_var_name_str,
-        #     cfg.shape_position_data: shape_data_list,
-        # }
-        # if self._debug_flag:
-        #     _ldd[cfg.current_block_position] = hex(shape_data_abs_pos)
-        #     _ldd[cfg.shape_size_pos] = shape_data_abs_pos
         return _ldd
-
-    def _read_shape_data(self, shape_pos):
-        shape_data_size = 0x40
-        bytes_ = self._get_content_bytes(shape_pos, size=shape_data_size)
-
-        def g_float(pos):
-            return self._get_4bytes_to_float(pos, bytes_)
-        pos_x = g_float(0x00)
-        pos_y = g_float(0x04)
-        pos_z = g_float(0x08)
-        rectangle_x = g_float(0x10)
-        rectangle_y = g_float(0x14)
-        rectangle_z = g_float(0x18)
-
-        __sphere_diameter = g_float(0x20)
-        retangele_extra = g_float(0x24)
-
-        cylinder_diameter = g_float(0x30)
-        cylinder_height = g_float(0x34)
-        _lst = [
-            pos_x, pos_y, pos_z,
-            rectangle_x, rectangle_y, rectangle_z,
-            __sphere_diameter, retangele_extra,
-            cylinder_diameter, cylinder_height,
-        ]
-        return _lst
 
     def _read_struct(self):
         self._read_header()

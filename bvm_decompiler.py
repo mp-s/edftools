@@ -7,9 +7,6 @@ import bvm_model as mdl
 
 class BvmData:
 
-    jmp_loc_count = 0
-    # 添加debug参数, 减少不必要噪音
-
     def __init__(self, file_path: str, debug_flag: bool = False):
         self._debug_mode = debug_flag
         with open(file_path, 'rb') as f:
@@ -49,7 +46,6 @@ class BvmData:
 
     def get_func_name(self):
         size = self._count_ptr2_list * 0x10
-        # end_offset = self._index_ptr2_list + size
         ptr2_data = self._get_content_with_size(self._index_ptr2_list, size)
         assert len(ptr2_data) == size
 
@@ -59,13 +55,10 @@ class BvmData:
             jmp_mark_index, _fn_name_pos, arg_index, arg_count_store = _lst
             jmp_mark_index = self._get_int(jmp_mark_index)
             func_name = self._get_string(_fn_name_pos)
-            # arg_index = _lst[2]
-            # arg_count = _lst[3][0]
-            # return int
+            # return uint
             arg_count = arg_count_store[0]
             # keep bytes type
             func_return_type_byte = arg_count_store[1:2]
-            # func_return_type_byte = _lst[3][1:2]
 
             _index = self._get_int(arg_index)
             _arg_byte = self._get_content_with_size(_index, 1)
@@ -138,7 +131,6 @@ class BvmData:
                 if (4 == operand_len and opcode_asm != 'pushstr'
                         and opcode_asm not in operands_use_uint
                         and opcode_asm not in operands_use_offset):  # all floats
-                    # float_hex.hex_to_float(operand)
                     operand_str = self._convert_operand(operand, 4)
                 elif opcode_asm == 'push':  # all numbers
                     operand_str = self._convert_operand(operand, operand_len)
@@ -248,15 +240,6 @@ class BvmData:
         '''
         signed-int or float
         '''
-        # enum_length = {
-        #     1: '<b',
-        #     2: '<h',
-        #     4: '<f',
-        # } if self._byteorder == 'little' else {
-        #     1: '>b',
-        #     2: '>h',
-        #     4: '>f',
-        # }
 
         def get_unpack_type(length: int) -> str:
             if self._byteorder == 'little':

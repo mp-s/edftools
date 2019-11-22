@@ -43,7 +43,7 @@ class BVMGenerate(object):
                 self._named_fn_arg_types_dict[_trimed_fn_name] = [
                     mdl.func_arg_type_byte.get(_.strip())
                     for _ in func_arg_list
-                ]                                               # [b'\x02', b'\x02', b'\x01', b'\x02']
+                ]                               # [b'\x02', b'\x02', b'\x01', b'\x02']
                 self._named_fn_ret_type_bytes[_trimed_fn_name] = mdl.func_arg_type_byte.get(
                     func_ret_type)
                 return func_line
@@ -135,7 +135,6 @@ class BVMGenerate(object):
         ''' 编译操作数为 bytes, 为下一步编译jmp获取长度用'''
         operands_use_uint = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2',
                              'cuscall3', 'loadabs', 'storeabs']  # unsigned int
-        # operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
 
         def _c_operand(line: str):
             _group = line.split()
@@ -168,7 +167,6 @@ class BVMGenerate(object):
                 int_ = int(_operand)
                 if -128 < int_ <= 127:
                     length = 1
-                # elif -32768 < int_ < 32767:
                 else:
                     length = 2
                 _compiled_byte = int_.to_bytes(
@@ -207,7 +205,6 @@ class BVMGenerate(object):
             if list_[0][-1] == ':':
                 jump_mark_flag = True
                 jump_mark_name = list_[0][:-1].strip()
-                # jump_mark_table[current_compiled_pos] = line[:-1].strip()
             else:
                 _group = list_
                 code_asm = _group[0].split()
@@ -261,7 +258,6 @@ class BVMGenerate(object):
 
         _named_fn_block3_data = {}
         _named_fn_block4 = self._named_fn_accept_num    # 块4表
-        # block3_pos_in_bytes = 0
         for k in self._named_fn_bytecode_positions.keys():
             _str_group = k.split('::')
             if len(_str_group) == 1:
@@ -391,7 +387,6 @@ class BVMGenerate(object):
                 _4 = _4_arg_nums.to_bytes(
                     1, byteorder='little') + ret_type + bytes(2)
             else:
-                # _4 = _4_arg_nums.to_bytes(4, byteorder='little')
                 _4 = self._int_to_4bytes(_4_arg_nums)
             named_fn_chunk_byte_list.append(b''.join([_1, _2, _3, _4]))
         func_names_bytes = b''.join(named_fn_chunk_byte_list)
