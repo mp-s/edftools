@@ -40,7 +40,7 @@ class BvmData:
     def get_global_var_name(self):
         size = self._count_ptr_list * 4
         offset2 = self._index_ptr_list + size
-        ptr_data = self._get_content(self._index_ptr_list, offset2)
+        ptr_data = self._get_content_with_ofs(self._index_ptr_list, offset2)
         assert len(ptr_data) == size
         ptr_list = [ptr_data[i:i+4] for i in range(0, size, 4)]
         for index, str_index in enumerate(ptr_list):
@@ -49,25 +49,30 @@ class BvmData:
 
     def get_func_name(self):
         size = self._count_ptr2_list * 0x10
-        end_offset = self._index_ptr2_list + size
-        ptr2_data = self._get_content(self._index_ptr2_list, end_offset)
+        # end_offset = self._index_ptr2_list + size
+        ptr2_data = self._get_content_with_size(self._index_ptr2_list, size)
         assert len(ptr2_data) == size
 
-        ptr2_list = [ptr2_data[i:i+0x10] for i in range(0, size, 16)]
+        ptr2_list = [ptr2_data[i:i+0x10] for i in range(0, size, 0x10)]
         for ptr2_chunk in ptr2_list:
-            _lst = [ptr2_chunk[i:i+4] for i in range(0, 16, 4)]
-            jmp_mark_index = self._get_int(_lst[0])
-            func_name = self._get_string(_lst[1])
-            arg_index = _lst[2]
-            arg_count = _lst[3][0]
-            func_return_type_byte = _lst[3][1:2]
+            _lst = [ptr2_chunk[i:i+4] for i in range(0, 0x10, 0x04)]
+            jmp_mark_index, _fn_name_pos, arg_index, arg_count_store = _lst
+            jmp_mark_index = self._get_int(jmp_mark_index)
+            func_name = self._get_string(_fn_name_pos)
+            # arg_index = _lst[2]
+            # arg_count = _lst[3][0]
+            # return int
+            arg_count = arg_count_store[0]
+            # keep bytes type
+            func_return_type_byte = arg_count_store[1:2]
+            # func_return_type_byte = _lst[3][1:2]
 
             _index = self._get_int(arg_index)
-            _arg_byte = self._get_content(_index, _index+1)
+            _arg_byte = self._get_content_with_size(_index, 1)
             if _arg_byte in mdl.func_arg_types:
                 types_name = []
                 if arg_count:
-                    types = self._get_content(_index, _index + arg_count)
+                    types = self._get_content_with_size(_index, arg_count)
                     for arg_type in types:
                         arg_type = arg_type.to_bytes(1, self._byteorder)
                         types_name.append(mdl.func_arg_types.get(arg_type))
@@ -87,13 +92,14 @@ class BvmData:
                     func_name, f'block ptr:{jmp_mark_index}, className_index:{arg_index}, global stores count: {arg_count}')
 
     def get_constructor(self):
-        _construct_chunk = self._get_content(
+        _construct_chunk = self._get_content_with_ofs(
             self._index_constructor, self._index_asm)
         self.__asm_decompiler(_construct_chunk, self._construct_lines)
         pass
 
     def asm_decompiler(self):
-        _asm_chunk = self._get_content(self._index_asm, self._index_str)
+        _asm_chunk = self._get_content_with_ofs(
+            self._index_asm, self._index_str)
         self.__asm_decompiler(_asm_chunk, self._asm_lines)
 
     def __asm_decompiler(self, chunk: bytes, buffer_dict: dict) -> dict:
@@ -126,9 +132,6 @@ class BvmData:
                 else:
                     pass
             else:
-                pass
-
-            if (operand_len):
                 operand = chunk[offset:offset+operand_len]
                 comments = None
 
@@ -238,7 +241,7 @@ class BvmData:
             utf16_byte = b''
         return str_list
 
-    def _convert_operand2(self, bytes_: bytes, bytes_length: int) -> str:
+    def _convert_operand2(self, bytes_: bytes, bytes_length: int = 0) -> str:
         return int.from_bytes(bytes_, byteorder=self._byteorder, signed=True)
 
     def _convert_operand(self, bytes_: bytes, bytes_length: int) -> str:
@@ -291,8 +294,12 @@ class BvmData:
         offset = mdl.offset_list.get(offset_name)
         return self._get_int(self.data[offset:offset+4])
 
-    def _get_content(self, offset1: int, offset2: int) -> bytes:
+    def _get_content_with_ofs(self, offset1: int, offset2: int) -> bytes:
         data = self.data[offset1:offset2]
+        return data
+
+    def _get_content_with_size(self, offset: int, size: int = 0) -> bytes:
+        data = self.data[offset:offset+size]
         return data
 
     def _get_int(self, byte_: bytes, signed_=False) -> int:
