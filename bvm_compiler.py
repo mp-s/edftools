@@ -81,19 +81,25 @@ class BVMGenerate(object):
                     _gbl_var_rel_pos += len(global_var_byte)
                     continue
             elif flag_constructor:
-                opcode, operand = line.split()
-                if '0x' in operand:
-                    operand = bytes.fromhex(operand[2:])
-                elif opcode == 'push':
-                    operand_int = int(operand)
-                    operand = operand_int.to_bytes(1, byteorder='little', signed=True)
-                elif opcode == 'push' and operand[-1] == 'f':
-                    operand_float = float(operand[:-1])
-                    operand = struct.pack('<f', operand_float)
+                _l = line.split()
+                if len(_l) == 1:
+                    opcode = _l[0]
+                    line_bytecode = mdl.compiler_bytecode(opcode)
                 else:
-                    operand_int = int(operand)
-                    operand = operand_int.to_bytes(1, byteorder='little')
-                line_bytecode = mdl.compiler_bytecode(opcode, operand)
+                    opcode, operand, *_ = _l
+
+                    if '0x' in operand:
+                        operand = bytes.fromhex(operand[2:])
+                    elif opcode == 'push':
+                        operand_int = int(operand)
+                        operand = operand_int.to_bytes(1, byteorder='little', signed=True)
+                    elif opcode == 'push' and operand[-1] == 'f':
+                        operand_float = float(operand[:-1])
+                        operand = struct.pack('<f', operand_float)
+                    else:
+                        operand_int = int(operand)
+                        operand = operand_int.to_bytes(1, byteorder='little')
+                    line_bytecode = mdl.compiler_bytecode(opcode, operand)
                 self._constructor_bytecode_list.append(line_bytecode)
 
             if '::' in line:
