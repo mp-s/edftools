@@ -295,17 +295,6 @@ class BVMGenerate(object):
 
                 block3_pos_in_bytes += len(byte_)
                 _block3_list.append(byte_)
-            # elif v == self._class_name:
-                # byte_ = v.encode(encoding='utf-16le') + bytes(2)
-                # if byte_ in _block3_list:
-                #     self._named_fn_block3_positions[k] = block3_cls_name_pos_flag
-                # else:
-                #     self._named_fn_block3_positions[k] = block3_pos_in_bytes
-                #     block3_cls_name_pos_flag = block3_pos_in_bytes
-
-                #     block3_pos_in_bytes += len(byte_)
-                #     _block3_list.append(byte_)
-                # self._cls_name_str_rel_pos = block3_cls_name_pos_flag
             else:
                 pass
         clsname_bytes = self._class_name.encode('utf-16le') + bytes(2)

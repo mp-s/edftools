@@ -3,6 +3,7 @@ import struct
 from pathlib import Path
 
 import bvm_model as mdl
+import common_utils as util
 
 
 class BvmData:
@@ -24,15 +25,19 @@ class BvmData:
         self._asm_lines = {}
 
     def _read_header(self):
+        def get_btoi(offset: int) -> int:
+            return util.int_from_4bytes(
+                util.get_4bytes(self.data, offset), self._byteorder)
+            # return self._get_int(self.data[offset:offset+4])
         # self.size = self.get_offset(offset_list['data_align_index'])
-        self._index_ptr_list = self._get_offset('pointer_list_index')
-        self._count_ptr_list = self._get_offset('pointer_list_count')
-        self._index_ptr2_list = self._get_offset('pointer_list2_index')
-        self._count_ptr2_list = self._get_offset('pointer_list2_count')
-        self._index_constructor = self._get_offset('store_chunk_index')
-        self._index_asm = self._get_offset('asm_code_chunk_index')
-        self._index_str = self._get_offset('string_chunk_index')
-        self._index_class = self._get_offset('class_name_index')
+        self._index_ptr_list = get_btoi(0x1c)
+        self._count_ptr_list = get_btoi(0x18)
+        self._index_ptr2_list = get_btoi(0x24)
+        self._count_ptr2_list = get_btoi(0x20)
+        self._index_constructor = get_btoi(0x30)
+        self._index_asm = get_btoi(0x34)
+        self._index_str = get_btoi(0x38)
+        self._index_class = get_btoi(0x3c)
 
     def get_global_var_name(self):
         size = self._count_ptr_list * 4
@@ -142,8 +147,7 @@ class BvmData:
                     if opcode_asm == 'cuscall0':
                         comments = mdl.call_func_types.get(operand_str, None)
                 elif opcode_asm in operands_use_offset:
-                    operand_int = int(
-                        self._convert_operand2(operand, operand_len))
+                    operand_int = int(self._convert_operand2(operand))
                     mark_offset = _opcode_offset + operand_int
                     operand_str = f'location_{mark_offset}'
                     self._asm_jmp_mark[mark_offset] = f'\n{operand_str} :'
@@ -214,8 +218,12 @@ class BvmData:
 
     def get_all_str(self):
         '''debug test'''
-        index = self._get_offset('string_chunk_index')
-        size = self._get_offset('class_name_index')
+        def _get_offset(offset_name: str) -> int:
+            offset = mdl.offset_list.get(offset_name)
+            return self._get_int(self.data[offset:offset+4])
+
+        index = _get_offset('string_chunk_index')
+        size = _get_offset('class_name_index')
         end_bytes = b'\x00\x00'
         str_buffer = []
         str_list = []
@@ -272,10 +280,6 @@ class BvmData:
         bytes_ = b''.join(str_buffer)
 
         return bytes_.decode(encoding=self._encoding)
-
-    def _get_offset(self, offset_name: str) -> int:
-        offset = mdl.offset_list.get(offset_name)
-        return self._get_int(self.data[offset:offset+4])
 
     def _get_content_with_ofs(self, offset1: int, offset2: int) -> bytes:
         data = self.data[offset1:offset2]
