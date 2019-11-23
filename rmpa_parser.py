@@ -4,7 +4,7 @@ import struct
 from pathlib import Path
 
 import common_utils as util
-from rmpa_config import cfg, TypeSpawnPoint, TypeShape
+from rmpa_config import *
 
 
 class RMPAParse:
@@ -13,22 +13,19 @@ class RMPAParse:
         super().__init__(*args, **kwargs)
         self._debug_flag = debug_flag
 
-    def _read_header(self):
-        header_data = self._origin_data[0:0x30]
-        h = RmpaHeader(header_data)
-        h.parse_block()
-        self._head_dict = h.generate_dict()
-
     def _read_type_header(self, type_pos, type_name):
         type_head_size = 0x20
         self_pos = type_pos
         bytes_ = self._get_content_bytes(type_pos, size=type_head_size)
 
-        sub_header_num = self._get_4bytes_to_uint(0x00, bytes_)
-        sub_header_block_start_pos = self._get_4bytes_to_uint(0x04, bytes_)
-        type_chunk_end_position = self._get_4bytes_to_uint(0x0C, bytes_)
+        def byte_uint(pos: int) -> int:
+            return util.uint_from_4bytes(
+                util.get_4bytes(bytes_, pos), self._byteorder)
+        sub_header_num = byte_uint(0x00)
+        sub_header_block_start_pos = byte_uint(0x04)
+        type_chunk_end_position = byte_uint(0x0C)
         # rmpa_identifier = self._get_4bytes_to_uint(0x10, bytes_)
-        name_bytes_pos = self._get_4bytes_to_uint(0x18, bytes_)
+        name_bytes_pos = byte_uint(0x18)
         name_str = self._get_string(name_bytes_pos, index=self_pos)
         # read sub headers
         _unamed_list = []
@@ -39,50 +36,55 @@ class RMPAParse:
                 sub_current_pos, type_name))
             pass
         type_header_dict = {
-            cfg.type_group_name: name_str,
-            cfg.sub_enum_groups: _unamed_list,
+            RmpaConfig.type_group_name: name_str,
+            RmpaConfig.sub_enum_groups: _unamed_list,
         }
         if self._debug_flag:
-            type_header_dict[cfg.type_chunk_end_position] = type_chunk_end_position
-            type_header_dict[cfg.sub_header_count] = sub_header_num
-            type_header_dict[cfg.current_block_position] = self_pos
+            type_header_dict[RmpaConfig.type_chunk_end_position] = hex(
+                type_chunk_end_position)
+            type_header_dict[RmpaConfig.sub_header_count] = sub_header_num
+            type_header_dict[RmpaConfig.current_block_position] = hex(self_pos)
         return type_header_dict
 
     def _read_sub_header(self, sub_header_pos, type_name):
         sub_header_size = 0x20
         self_pos = sub_header_pos
         bytes_ = self._get_content_bytes(sub_header_pos, size=sub_header_size)
+
+        def byte_uint(pos: int) -> int:
+            return util.uint_from_4bytes(
+                util.get_4bytes(bytes_, pos), self._byteorder)
         base_type_dict = {
-            cfg.type_spawnpoint: self._read_spawnpoint,
-            cfg.type_route: self._read_routes,
-            cfg.type_shape: self._read_shape_set,
+            RmpaConfig.type_spawnpoint: self._read_spawnpoint,
+            RmpaConfig.type_route: self._read_waypoint,
+            RmpaConfig.type_shape: self._read_shape,
         }
 
         # sub_chunk_end_position = self._get_4bytes_to_uint(0x08, bytes_)
         # name_str_length = self._get_4bytes_to_uint(0x10, bytes_)
-        name_bytes_pos = self._get_4bytes_to_uint(0x14, bytes_)
+        name_bytes_pos = byte_uint(0x14)
         name_str = self._get_string(name_bytes_pos, index=self_pos)
-        base_data_num = self._get_4bytes_to_uint(0x18, bytes_)
-        base_data_block_start_pos = self._get_4bytes_to_uint(0x1C, bytes_)
+        base_data_num = byte_uint(0x18)
+        base_data_block_start_pos = byte_uint(0x1C)
         _base_list = []
         _base_data_size = {
-            cfg.type_route: 0x3c,
-            cfg.type_shape: 0x30,
+            RmpaConfig.type_route: 0x3c,
+            RmpaConfig.type_shape: 0x30,
             # 'camera':,
-            cfg.type_spawnpoint: 0x40,
+            RmpaConfig.type_spawnpoint: 0x40,
         }
-        for _ in range(base_data_num):
+        for idx in range(base_data_num):
             data_size = _base_data_size.get(type_name)
-            base_data_current_pos = _ * data_size + base_data_block_start_pos + self_pos
+            base_data_current_pos = idx * data_size + base_data_block_start_pos + self_pos
             _fn = base_type_dict.get(type_name, str)
             _base_list.append(_fn(base_data_current_pos))
         ld = {
-            cfg.sub_enum_name: name_str,
-            cfg.base_data_list: _base_list,
+            RmpaConfig.sub_enum_name: name_str,
+            RmpaConfig.base_data_list: _base_list,
         }
         if self._debug_flag:
-            ld[cfg.base_data_count] = base_data_num
-            ld[cfg.current_block_position] = hex(self_pos)
+            ld[RmpaConfig.base_data_count] = base_data_num
+            ld[RmpaConfig.current_block_position] = hex(self_pos)
         return ld
 
     def _read_spawnpoint(self, spawnpoint_def_pos):
@@ -91,64 +93,42 @@ class RMPAParse:
         bytes_ = self._get_content_bytes(spawnpoint_def_pos, size=sp_size)
         sp = TypeSpawnPoint(self._byteorder)
         sp.from_bytes_block(bytes_)
-        sp.name = self._get_string(sp.name_in_rmpa_position, self_pos)
-        _ld = sp.to_dict()
+        sp.name = self._get_string(sp.name_in_rmpa_pos, self_pos)
+        _ld = sp.to_dict(self._debug_flag)
+        if self._debug_flag:
+            _ld[RmpaConfig.current_block_position] = hex(self_pos)
         return _ld
 
-    def _read_routes(self, route_def_pos):
-        rt_size = 0x3C
+    def _read_waypoint(self, route_def_pos):
+        wp_size = 0x3C
         self_pos = route_def_pos
-        bytes_ = self._get_content_bytes(route_def_pos, size=rt_size)
-        current_route_number = self._get_4bytes_to_uint(0x00, bytes_)
-        next_route_count = self._get_4bytes_to_uint(0x04, bytes_)
-        next_route_bind_block_start_pos = self._get_4bytes_to_uint(
-            0x08, bytes_)
-        # next_route_bind_block_end_pos = self._get_4bytes_to_uint(0x10, bytes_)
-        route_bind_pos = self_pos + next_route_bind_block_start_pos
-        rout_p_size = next_route_count * 0x04
-        route_bind_bytes = self._get_content_bytes(
-            route_bind_pos, size=rout_p_size)
-        route_p = [
-            self._get_4bytes_to_uint(x, route_bind_bytes)
-            for x in range(0, rout_p_size, 4)
-        ]
+        bytes_ = self._get_content_bytes(route_def_pos, size=wp_size)
 
-        # rmpa_identifier = self._get_4bytes_to_uint(0x14, bytes_)
+        wp = TypeWayPoint(self._byteorder)
+        wp.from_bytes_block(bytes_)
+        wp.name = self._get_string(wp.name_in_rmpa_pos, self_pos)
 
-        extra_sgo_size = self._get_4bytes_to_uint(0x18, bytes_)
-        extra_sgo_pos = self._get_4bytes_to_uint(0x1c, bytes_)
-        if extra_sgo_size:
-            extra_sgo_bytes = self._get_content_bytes(
-                extra_sgo_pos + self_pos, size=extra_sgo_size)
-            extra_sgo_endian = extra_sgo_bytes[0:4]
-            up_code = '<f' if extra_sgo_endian == b'SGO\x00' else '>f'
-            extra_sgo_b64 = struct.unpack(
-                up_code, extra_sgo_bytes[0x28:0x2c])[0]
-        else:
-            extra_sgo_b64 = cfg.empty_waypoint_width
-        # name_str_length = self._get_4bytes_to_uint(0x20, bytes_)
-        name_bytes_pos = self._get_4bytes_to_uint(0x24, bytes_)
-        name_str = self._get_string(
-            name_bytes_pos, self_pos) if name_bytes_pos else ''
-        coord = [
-            self._get_4bytes_to_float(x, bytes_)
-            for x in range(0x28, 0x34, 4)
-        ]
+        _next_wp_start_pos = wp.next_wp_list_blk_in_rmpa_start_pos
+        # _next_wp_end_pos = waypoint.next_wp_list_blk_in_rmpa_end_pos
+        _next_wpblk_abs_start_pos = self_pos + _next_wp_start_pos
+        _next_wp_blk_size = wp.next_wp_count * 0x04
+        next_wp_blk_bytes = self._get_content_bytes(
+            _next_wpblk_abs_start_pos, _next_wp_blk_size)
 
-        _ddd = {
-            cfg.route_number: current_route_number,
-            cfg.base_name: name_str,
-            cfg.route_position: coord,
-            cfg.waypoint_width: extra_sgo_b64,
-            cfg.route_next_block: route_p,
-        }
+        extra_sgo_abs_pos = self_pos + wp.extra_sgo_in_rmpa_start_pos
+        _extra_sgo_bytes = self._get_content_bytes(
+            extra_sgo_abs_pos, wp.extra_sgo_size)
+
+        wp.from_bytes_block_extra(next_wp_blk_bytes, _extra_sgo_bytes)
+        _ddd = wp.to_dict(self._debug_flag)
         if self._debug_flag:
-            _ddd[cfg.current_block_position] = hex(self_pos)
-            _ddd[cfg.route_next_block_pos] = hex(route_bind_pos)
-            _ddd[cfg.route_sgo_block_pos] = hex(extra_sgo_pos + self_pos)
+            _ddd[RmpaConfig.current_block_position] = hex(self_pos)
+            _ddd[RmpaConfig.route_next_block_pos] = hex(
+                _next_wpblk_abs_start_pos)
+            _ddd[RmpaConfig.route_sgo_block_pos] = hex(extra_sgo_abs_pos)
         return _ddd
 
-    def _read_shape_set(self, shape_pos):
+    def _read_shape(self, shape_pos):
         shape_set_size = 0x30
         self_pos = shape_pos
         bytes_ = self._get_content_bytes(self_pos, size=shape_set_size)
@@ -160,14 +140,19 @@ class RMPAParse:
         shape_data_block_abs_pos = self_pos + shape.size_data_in_rmpa_pos
         size_bytes = self._get_content_bytes(shape_data_block_abs_pos, 0x40)
         shape.from_bytes_block_size_data(size_bytes)
-        _ldd = shape.generate_dict()
-
+        _ldd = shape.to_dict(self._debug_flag)
+        if self._debug_flag:
+            _ldd[RmpaConfig.current_block_position] = hex(self_pos)
+            _ldd[RmpaConfig.shape_size_pos] = hex(shape_data_block_abs_pos)
         return _ldd
 
     def _read_struct(self):
-        self._read_header()
+        header_data = self._origin_data[0:0x30]
+        h = RmpaHeader(self._byteorder)
+        h.parse_block(header_data)
+        _head_dict = h.generate_dict()
         self._struct = {}
-        for type_name, type_data in self._head_dict.items():
+        for type_name, type_data in _head_dict.items():
             type_head_pos, flag = type_data
             if flag:
                 self._struct[type_name] = self._read_type_header(
@@ -178,13 +163,6 @@ class RMPAParse:
         byte_ = data[offset:offset+4]
         int_ = int.from_bytes(byte_, byteorder=self._byteorder, signed=False)
         return int_
-
-    def _get_4bytes_to_float(self, offset: int, data_chunk: bytes = None) -> float:
-        data = data_chunk if data_chunk else self._origin_data
-        byte_ = data[offset:offset+4]
-        unpack_type = '>f' if self._byteorder == 'big' else '<f'
-        float_ = struct.unpack(unpack_type, byte_)[0]
-        return float_
 
     def _get_string(self, offset: int, index: int = 0) -> str:
         end_bytes = b'\x00\x00'
@@ -261,14 +239,15 @@ class RMPAParse:
 
 
 class RmpaHeader:
-    def __init__(self, header_data: bytes):
+    def __init__(self, byteorder: str):
         super().__init__()
-        self._block_data = header_data
+        self._byteorder = byteorder
 
-    def parse_block(self):
-        data = self._block_data
-        uint_be = util.uint_from_4bytes_big
-        def get_uint(pos): return uint_be(util.get_4bytes(data, pos))
+    def parse_block(self, block_data: bytes):
+
+        def get_uint(pos: int) -> int:
+            return util.uint_from_4bytes(
+                util.get_4bytes(block_data, pos), self._byteorder)
         self.flag_route = get_uint(0x08)
         self.flag_shape = get_uint(0x10)
         self.flag_camera = get_uint(0x18)
@@ -280,10 +259,10 @@ class RmpaHeader:
 
     def generate_dict(self):
         return {
-            cfg.type_route: (self.pos_route, self.flag_route),
-            cfg.type_shape: (self.pos_shape, self.flag_shape),
-            cfg.type_camera: (self.pos_camera, self.flag_camera),
-            cfg.type_spawnpoint: (self.pos_spawnpoint, self.flag_spawnpoint),
+            RmpaConfig.type_route: (self.pos_route, self.flag_route),
+            RmpaConfig.type_shape: (self.pos_shape, self.flag_shape),
+            RmpaConfig.type_camera: (self.pos_camera, self.flag_camera),
+            RmpaConfig.type_spawnpoint: (self.pos_spawnpoint, self.flag_spawnpoint),
         }
 
 

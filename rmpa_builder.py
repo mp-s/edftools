@@ -3,8 +3,7 @@ import json
 import struct
 from pathlib import Path
 
-# import rmpa_config as cfg
-from rmpa_config import cfg
+from rmpa_config import *
 
 
 class RMPAGenerate:
@@ -15,15 +14,16 @@ class RMPAGenerate:
             self._data_dict = json.load(f)
         self.pre = RMPAJsonPreprocess(self._data_dict, debug_flag)
         self._debug_flag = debug_flag
+        self._byteorder = 'big'
 
     def _build_type_block(self, type_name, type_dict):
         #  子头个数
         # 第一个子头偏移 默认 0x20
         # 空字符串偏移
-        type_group_name = type_dict.get(cfg.type_group_name)
+        type_group_name = type_dict.get(RmpaConfig.type_group_name)
         type_group_header_abs_position = self._get_type_header_abs_pos(
             type_name)
-        sub_groups = type_dict.get(cfg.sub_enum_groups)
+        sub_groups = type_dict.get(RmpaConfig.sub_enum_groups)
         sub_groups_count = len(sub_groups)
         if sub_groups_count == 0:
             return b''
@@ -39,12 +39,12 @@ class RMPAGenerate:
             # self._build_sub_header()
             # 需要知道自己位置
             sub_dict = sub_group_item
-            sub_group_name = sub_dict.get(cfg.sub_enum_name)
-            base_groups_list = sub_dict.get(cfg.base_data_list)
+            sub_group_name = sub_dict.get(RmpaConfig.sub_enum_name)
+            base_groups_list = sub_dict.get(RmpaConfig.base_data_list)
             base_item_count = len(base_groups_list)
 
             self_head_abs_pos = sub_groups_abs_start_pos + index * 0x20
-            _2_name_pos_int = self.pre.fixed_name_table_position_table.get(
+            _2_name_pos_int = self.pre.fixed_name_at_pos_tbl.get(
                 sub_group_name) - self_head_abs_pos
 
             remain_sub_groups_count = sub_groups_count - index
@@ -79,7 +79,7 @@ class RMPAGenerate:
             sub_dict_length: int,
             type_header_abs_pos: int) -> bytes:
         _bytes_0x00 = int_to_4bytes(sub_dict_length)
-        _type_name_abs_pos = self.pre.fixed_name_table_position_table.get(
+        _type_name_abs_pos = self.pre.fixed_name_at_pos_tbl.get(
             type_str_name, type_header_abs_pos)
         _bytes_0x18 = int_to_4bytes(_type_name_abs_pos - type_header_abs_pos)
         block_bytes = b''.join([
@@ -98,33 +98,11 @@ class RMPAGenerate:
         return size + file_header_size
 
     def _build_spawnpoint_block(self, base_dict: dict, abs_pos_start: int) -> bytes:
-        name_str = base_dict.get(cfg.base_name)
-        pos1 = base_dict.get(cfg.spawnpoint_pos_1)
-        pos1_float_lst = list(map(float, pos1))
-        pos2 = base_dict.get(cfg.spawnpoint_pos_2)
-        pos2_float_lst = list(map(float, pos2))
-
-        # generate simple block
-        _1_bytes = bytes(0x0c)
-        _2_bytes = b''
-        for float_item in pos1_float_lst:
-            _2_bytes += struct.pack('>f', float_item)
-        _3_bytes = bytes(4)
-        _4_bytes = b''
-        for float_item in pos2_float_lst:
-            _4_bytes += struct.pack('>f', float_item)
-        _5_bytes = _1_bytes
-        _6_bytes = self.pre.fixed_name_table_position_table.get(
-            name_str) - abs_pos_start
-        _6_bytes = _6_bytes.to_bytes(4, byteorder='big')
-        _7_bytes = bytes(8)
-
-        # 俩坐标
-        # 字符串的长度和计算偏移
-        return b''.join([
-            _1_bytes, _2_bytes, _3_bytes, _4_bytes,
-            _5_bytes, _6_bytes, _7_bytes
-        ])
+        sp = TypeSpawnPoint(self._byteorder)
+        sp.from_dict(base_dict)
+        sp.name_in_rmpa_pos = self.pre.fixed_name_at_pos_tbl.get(
+            sp.name) - abs_pos_start
+        return sp.to_bytes_block()
 
     def _build_route_block(self):
         # 0x0 当前编号                  必须
@@ -153,141 +131,56 @@ class RMPAGenerate:
         # 生成rmpa id标识
         _main_group_data_list = []
         _extra_one_data_list = []
-        if type_name == cfg.type_spawnpoint:
+        if type_name == RmpaConfig.type_spawnpoint:
             for index, base_data_table in enumerate(base_data_list):
                 block_start_pos = group_start_pos + 0x40 * index
                 _main_group_data_list.append(
                     self._build_spawnpoint_block(base_data_table, block_start_pos))
             # return b''.join(_main_group_data_list)
-        elif type_name == cfg.type_shape:
+        elif type_name == RmpaConfig.type_shape:
             shape_size_start_pos = 0x30 * len(base_data_list)
             for index, base_data_table in enumerate(base_data_list):
                 block_start_pos = group_start_pos + 0x30 * index
-                shape_type_name = base_data_table.get(cfg.shape_type_name)
-                shape_type_name_pos = self.pre.fixed_name_table_position_table.get(
-                    shape_type_name, block_start_pos)
-                shape_type_name_pos_byte = int_to_4bytes(
-                    shape_type_name_pos - block_start_pos)
-                shape_def_name = base_data_table.get(cfg.shape_variable_name)
-                shape_def_name_pos = self.pre.fixed_name_table_position_table.get(
-                    shape_def_name, block_start_pos)
-                shape_def_name_pos_byte = int_to_4bytes(
-                    shape_def_name_pos - block_start_pos)
-                shape_size_pos = shape_size_start_pos + 0x10 * index
-                shape_size_pos_bytes = int_to_4bytes(shape_size_pos)
-                shape_setup_bytes = b''.join([
-                    bytes(8), shape_type_name_pos_byte, bytes(4),
-                    shape_def_name_pos_byte, bytes(
-                        4), shape_size_pos_bytes, bytes(4),
-                    b'\0\0\0\1', shape_size_pos_bytes, bytes(8),
-                ])
+                shape = TypeShape(self._byteorder)
+                shape.from_dict(base_data_table)
+                # shape name
+                name_rel_pos = self.pre.fixed_name_at_pos_tbl.get(
+                    shape.name, 0) - block_start_pos
+                shape.name_in_rmpa_pos = name_rel_pos
+                # shape type name
+                type_rel_pos = self.pre.fixed_name_at_pos_tbl.get(
+                    shape.shape_type, 0) - block_start_pos
+                shape.shape_type_in_rmpa_pos = type_rel_pos
+                # shape size data position
+                shape.size_data_in_rmpa_pos = shape_size_start_pos + 0x10 * index
+                # building block
+                shape_setup_bytes = shape.to_bytes_block()
 
-                shape_size_list = base_data_table.get(cfg.shape_position_data)
-                list_ = list(
-                    map(float_to_4bytes, (map(float, shape_size_list))))
-                shape_size_data_bytes = b''.join([
-                    list_[0], list_[1], list_[2], bytes(4),
-                    list_[3], list_[4], list_[5], bytes(4),
-                    list_[6], list_[7], bytes(8),
-                    list_[8], list_[9], bytes(8),
-                ])
+                shape_size_data_bytes = shape.to_bytes_block_size_data()
+
                 _main_group_data_list.append(shape_setup_bytes)
                 _extra_one_data_list.append(shape_size_data_bytes)
 
-        elif type_name == cfg.type_route:
+        elif type_name == RmpaConfig.type_route:
             route_block_size = 0x3c * len(base_data_list)
             route_block_padding_size = (0x10 - route_block_size % 0x10) % 0x10
             route_extra_start_pos = route_block_size + route_block_padding_size
             route_extra_latest_end_pos = 0
             for index, base_data_table in enumerate(base_data_list):
                 block_start_pos = group_start_pos + 0x3c * index
-                # 1
-                # route_number = base_data_table.get('route number')
-                route_number = index
-                # 2
-                route_name = base_data_table.get(cfg.base_name)
-                route_name_pos = self.pre.fixed_name_table_position_table.get(
-                    route_name, block_start_pos)
-                route_name_pos -= block_start_pos
-                # 3
-                route_pos_data = base_data_table.get(cfg.route_position)
-                route_pos_float_iter = map(float, route_pos_data)
-                route_pos_bytes = b''.join(
-                    map(float_to_4bytes, route_pos_float_iter))
-                # 4
-                _route_extra_bytes = b''
-                next_route_list = base_data_table.get(cfg.route_next_block)
-                # parser要调整数据 不能再固定了
-                next_route_count = len(next_route_list)
-                if next_route_count > 0:
-                    next_route_block_size = 0x04 * next_route_count
-                    next_route_block_padding_size = (
-                        0x10 - next_route_block_size % 0x10) % 0x10
-                    # result size
-                    next_route_block_align_size = next_route_block_size + next_route_block_padding_size
-                    # next_route_bytes = b''
-                    _next_route_encoded_byte_iterator = map(
-                        int_to_4bytes, next_route_list)
-                    next_route_bytes = b''.join(
-                        _next_route_encoded_byte_iterator)
-                    # for nextRoute_number in next_route_list:
-                    #     next_route_bytes += int_to_4bytes(nextRoute_number)
-                    # result bytes
-                    next_route_bytes += bytes(next_route_block_padding_size)
-                else:
-                    next_route_block_align_size = 0
-                    next_route_bytes = b''
-                # next_route_block_start_pos = 0
-                # next_route_block_end_pos = next_route_block_start_pos + next_route_block_align_size
-                # 5
-                # sgo_start_pos = next_route_block_end_pos    # extra sgo process
-                sgo_size = cfg.extra_sgo_size   # padding data
-                rmpa_waypoint_width = base_data_table.get(cfg.waypoint_width)
-                if str(rmpa_waypoint_width).lower() != cfg.empty_waypoint_width:
-                    no_sgo_flag = False
-                    rmpa_waypoint_width = float(rmpa_waypoint_width)
-                    width_bytes = struct.pack('<f', rmpa_waypoint_width)
-                    extra_sgo_bytes = b''.join([
-                        cfg.extra_sgo_head,
-                        width_bytes,
-                        cfg.extra_sgo_foot,
-                        bytes(cfg.extra_sgo_size_aligned -
-                              cfg.extra_sgo_size)
-                    ])
-                else:
-                    # padding zero
-                    no_sgo_flag = True
-                    extra_sgo_bytes = b''
-                _route_extra_bytes = next_route_bytes + extra_sgo_bytes
 
-                _extra_one_start_pos = route_extra_start_pos + \
+                wp = TypeWayPoint(self._byteorder)
+                wp.from_dict(base_data_table)
+
+                wp.name_in_rmpa_pos = self.pre.fixed_name_at_pos_tbl.get(
+                    wp.name, block_start_pos) - block_start_pos
+                wp.next_wp_list_blk_in_rmpa_start_pos = route_extra_start_pos + \
                     route_extra_latest_end_pos - 0x3c * index
-                _next_route_blk_end_pos = _extra_one_start_pos + next_route_block_align_size
-                if no_sgo_flag:
-                    extra_sgo_info_bytes = bytes(8)
-                else:
-                    extra_sgo_info_bytes = int_to_4bytes(cfg.extra_sgo_size) +\
-                        int_to_4bytes(_next_route_blk_end_pos)
-                route_block_bytes = b''.join([
-                    # 0x00
-                    int_to_4bytes(route_number),
-                    int_to_4bytes(next_route_count),
-                    int_to_4bytes(_extra_one_start_pos),
-                    bytes(4),
-                    # 0x10
-                    int_to_4bytes(_next_route_blk_end_pos),
-                    bytes(4),
-                    extra_sgo_info_bytes,
-                    # 0x20 ~ 0x34
-                    bytes(4),
-                    int_to_4bytes(route_name_pos),
-                    route_pos_bytes,
-                    # 0x34 ~
-                    bytes(8)
-                ])
+                route_block_bytes = wp.to_bytes_block(index)
+                _route_extra_bytes = wp.to_bytes_block_extra()
+
                 route_extra_latest_end_pos += len(_route_extra_bytes)
                 _main_group_data_list.append(route_block_bytes)
-                # _main_group_data_list.append(bytes(route_block_padding_size))
                 _extra_one_data_list.append(_route_extra_bytes)
             _main_group_data_list.append(bytes(route_block_padding_size))
         else:
@@ -299,7 +192,7 @@ class RMPAGenerate:
     def run(self, file_path):
 
         some_bytes = b''
-        some_type_names = cfg.compose_header
+        some_type_names = RmpaConfig.compose_header
         some_flags = []
         # some_header_pos = [0x30, 0x30, 0x30, 0x30]
         some_header_pos = []
@@ -309,7 +202,7 @@ class RMPAGenerate:
             k = _t_n
             v = self._data_dict.get(_t_n)
             some_header_pos.append(some_header_start_pos)
-            if v is None or k == cfg.type_camera:
+            if v is None or k == RmpaConfig.type_camera:
                 some_flags.append(0)
                 continue
             block_bytes = self._build_type_block(k, v)
@@ -353,7 +246,7 @@ class RMPAJsonPreprocess:
         self._route_extra_data_size_list = []
         self._read_node()
 
-        self.fixed_name_table_position_table = self.abs_str_tbl()
+        self.fixed_name_at_pos_tbl = self.abs_str_tbl()
         self.name_table_bytes = self.name_bytes()
 
     def name_bytes(self) -> bytes:
@@ -364,10 +257,12 @@ class RMPAJsonPreprocess:
     def _name_pos_prediction(self) -> int:
         _1_rmpa_header = 0x30
 
-        self.route_block_size = self.type_block_size_predict(cfg.type_route)
-        self.shape_block_size = self.type_block_size_predict(cfg.type_shape)
+        self.route_block_size = self.type_block_size_predict(
+            RmpaConfig.type_route)
+        self.shape_block_size = self.type_block_size_predict(
+            RmpaConfig.type_shape)
         self.spawnpoint_block_size = self.type_block_size_predict(
-            cfg.type_spawnpoint)
+            RmpaConfig.type_spawnpoint)
         abs_pos_start = _1_rmpa_header + self.route_block_size +\
             self.shape_block_size + self.spawnpoint_block_size
         if self._debug_flag:
@@ -380,12 +275,11 @@ class RMPAJsonPreprocess:
             return 0
         type_header_size = 0x20
         sub_header_size = 0x20 * len(type_sub_groups_count_list)
-        if type_name == cfg.type_shape:
+        if type_name == RmpaConfig.type_shape:
             sub_data_size = (0x30 + 0x40) * sum(type_sub_groups_count_list)
-        elif type_name == cfg.type_spawnpoint:
+        elif type_name == RmpaConfig.type_spawnpoint:
             sub_data_size = 0x40 * sum(type_sub_groups_count_list)
-        elif type_name == cfg.type_route:
-            # sub_data_size = 0x3c * sum(type_sub_groups_count_list)
+        elif type_name == RmpaConfig.type_route:
             sub_data_size = 0
             for route_base_count in type_sub_groups_count_list:
                 sub_data_size += 0x3c * route_base_count
@@ -397,21 +291,16 @@ class RMPAJsonPreprocess:
         type_block_size = type_header_size + sub_header_size + sub_data_size
         return type_block_size
 
-    # def route_type_blk_size_predict(self, type_name='route') -> int:
-    #     type_sub_groups_count_list = self.base_data_count_table.get(type_name, [0])
-    #     sub_data_size = 0x3c * sum()
-    #     pass
-
     def _route_type_extra_blk_propress(self, base_data_list: list):
         for route_item in base_data_list:
-            next_list = route_item.get(cfg.route_next_block)
-            extra_sgo = route_item.get(cfg.waypoint_width)
+            next_list = route_item.get(RmpaConfig.route_next_block, list())
+            extra_sgo = route_item.get(RmpaConfig.waypoint_width)
             list_length = len(next_list)
             next_route_blk_size = (3 + list_length) // 4 * 4 * 0x04
-            if str(extra_sgo).lower() == cfg.empty_waypoint_width:
-                extra_sgo_size = 0
-            else:
+            if extra_sgo:
                 extra_sgo_size = 0x70
+            else:
+                extra_sgo_size = 0
             extra_size = next_route_blk_size + extra_sgo_size
             self._route_extra_data_size_list.append(extra_size)
 
@@ -423,22 +312,28 @@ class RMPAJsonPreprocess:
     def _read_node(self, dict_: dict = None):
         if dict_ == None:
             dict_ = self._json_dict
+        key_list = [
+            RmpaConfig.base_name,
+            RmpaConfig.shape_type_name,
+            RmpaConfig.sub_enum_name,
+            RmpaConfig.type_group_name,
+        ]
         for k, v in dict_.items():
             if type(v) == list:
                 self._read_list(k, v)
             elif type(v) == dict:
                 self._node_type_name = k
                 self._read_node(dict_=v)
-            elif 'name' in k and type(v) == str:
+            elif k in key_list and type(v) == str:
                 self._append_str_to_tble(v)
 
     def _read_list(self, type_name: str, list_: list):
         list_count = len(list_)
-        if 'sub' in type_name:
+        if RmpaConfig.sub_enum_groups == type_name:
             if self._debug_flag:
                 print('current sub header count:', list_count)
             self._sub_header_count += list_count
-        elif 'base' in type_name:
+        elif RmpaConfig.base_data_list == type_name:
             if self._debug_flag:
                 print('current base data count:', list_count)
                 print(self._node_type_name)
@@ -446,7 +341,7 @@ class RMPAJsonPreprocess:
                 self._node_type_name, [])
             sub_groups_base.append(list_count)
             self.base_data_count_table[self._node_type_name] = sub_groups_base
-            if self._node_type_name == cfg.type_route:
+            if self._node_type_name == RmpaConfig.type_route:
                 self._route_type_extra_blk_propress(list_)
                 pass
         for item in list_:

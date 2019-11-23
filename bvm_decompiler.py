@@ -26,7 +26,7 @@ class BvmData:
 
     def _read_header(self):
         def get_btoi(offset: int) -> int:
-            return util.int_from_4bytes(
+            return util.uint_from_4bytes(
                 util.get_4bytes(self.data, offset), self._byteorder)
             # return self._get_int(self.data[offset:offset+4])
         # self.size = self.get_offset(offset_list['data_align_index'])

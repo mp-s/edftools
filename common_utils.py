@@ -36,8 +36,10 @@ def float_from_4bytes(bytes_: bytes, byteorder: str) -> float:
 
 
 def int_to_4bytes(number: int, byteorder: str) -> bytes:
-    return number.to_bytes(4, byteorder=byteorder)
+    return number.to_bytes(4, byteorder=byteorder, signed=True)
 
+def uint_to_4bytes(number: int, byteorder: str) -> bytes:
+    return number.to_bytes(4, byteorder=byteorder)
 
 def float_to_4bytes(number: float, byteorder: str) -> bytes:
     if byteorder == 'little':
