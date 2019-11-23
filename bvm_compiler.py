@@ -26,11 +26,13 @@ class BVMGenerate(object):
                 # CruiseAndRespawn:   /- int(int, string, string, float)
                 # ['CruiseAndRespawn:   ', ' int(int, string, string, float)']
                 func_line, func_arg = line.split('/-')
-                func_line = func_line.strip()                   # 'CruiseAndRespawn:'
+                # 'CruiseAndRespawn:'
+                func_line = func_line.strip()
                 # 'int(int, string, string, float)'
                 func_arg = func_arg.strip()
                 _split_group = func_arg.split('(')
-                func_ret_type = _split_group[0]                 # 'int'
+                # 'int'
+                func_ret_type = _split_group[0]
 
                 # 'float, float, int, float)'
                 func_arg_o_str = _split_group[1]
@@ -89,20 +91,25 @@ class BVMGenerate(object):
                     _gbl_var_rel_pos += len(global_var_byte)
                     continue
             elif flag_constructor:
-                opcode, operand = line.split()
-                if '0x' in operand:
-                    operand = bytes.fromhex(operand[2:])
-                elif opcode == 'push':
-                    operand_int = int(operand)
-                    operand = operand_int.to_bytes(
-                        1, byteorder='little', signed=True)
-                elif opcode == 'push' and operand[-1] == 'f':
-                    operand_float = float(operand[:-1])
-                    operand = struct.pack('<f', operand_float)
+                _l = line.split()
+                if len(_l) == 1:
+                    opcode = _l[0]
+                    line_bytecode = mdl.compiler_bytecode(opcode)
                 else:
-                    operand_int = int(operand)
-                    operand = operand_int.to_bytes(1, byteorder='little')
-                line_bytecode = mdl.compiler_bytecode(opcode, operand)
+                    opcode, operand = _l
+                    if '0x' in operand:
+                        operand = bytes.fromhex(operand[2:])
+                    elif opcode == 'push':
+                        operand_int = int(operand)
+                        operand = operand_int.to_bytes(
+                            1, byteorder='little', signed=True)
+                    elif opcode == 'push' and operand[-1] == 'f':
+                        operand_float = float(operand[:-1])
+                        operand = struct.pack('<f', operand_float)
+                    else:
+                        operand_int = int(operand)
+                        operand = operand_int.to_bytes(1, byteorder='little')
+                    line_bytecode = mdl.compiler_bytecode(opcode, operand)
                 self._constructor_bytecode_list.append(line_bytecode)
 
             if '::' in line:
@@ -259,16 +266,16 @@ class BVMGenerate(object):
         _named_fn_block3_data = {}
         _named_fn_block4 = self._named_fn_accept_num    # 块4表
         for k in self._named_fn_bytecode_positions.keys():
-            _str_group = k.split('::')
-            if len(_str_group) == 1:
-                current_fn_name = k
-                _named_fn_block3_data[k] = self._named_fn_arg_types_dict.get(k)
+            # _str_group = k.split('::')
+            # if len(_str_group) == 1:
+            current_fn_name = k
+            _named_fn_block3_data[k] = self._named_fn_arg_types_dict.get(k)
             # Mission::Main
-            elif len(_str_group) == 2 and self._class_name == _str_group[0]:
-                current_fn_name = _str_group[1]
-                _named_fn_block3_data[k] = self._class_name
-            else:
-                continue
+            # elif len(_str_group) == 2 and self._class_name == _str_group[0]:
+            #     current_fn_name = _str_group[1]
+            #     _named_fn_block3_data[k] = self._class_name
+            # else:
+            #     continue
             self._named_fn_name_str_positions[k] = name_str_pos_in_bytes
             byte_ = current_fn_name.encode(encoding='utf-16le') + bytes(2)
             self._str_tbl3_list.append(byte_)
@@ -277,7 +284,7 @@ class BVMGenerate(object):
 
         self._named_fn_block3_positions = {}     # 块3表
         block3_pos_in_bytes = 0
-        block3_cls_name_pos_flag = 0
+        # block3_cls_name_pos_flag = 0
         _block3_list = []
         for k, v in _named_fn_block3_data.items():
             if v == [None]:
@@ -288,19 +295,22 @@ class BVMGenerate(object):
 
                 block3_pos_in_bytes += len(byte_)
                 _block3_list.append(byte_)
-            elif v == self._class_name:
-                byte_ = v.encode(encoding='utf-16le') + bytes(2)
-                if byte_ in _block3_list:
-                    self._named_fn_block3_positions[k] = block3_cls_name_pos_flag
-                else:
-                    self._named_fn_block3_positions[k] = block3_pos_in_bytes
-                    block3_cls_name_pos_flag = block3_pos_in_bytes
+            # elif v == self._class_name:
+                # byte_ = v.encode(encoding='utf-16le') + bytes(2)
+                # if byte_ in _block3_list:
+                #     self._named_fn_block3_positions[k] = block3_cls_name_pos_flag
+                # else:
+                #     self._named_fn_block3_positions[k] = block3_pos_in_bytes
+                #     block3_cls_name_pos_flag = block3_pos_in_bytes
 
-                    block3_pos_in_bytes += len(byte_)
-                    _block3_list.append(byte_)
-                self._cls_name_str_rel_pos = block3_cls_name_pos_flag
+                #     block3_pos_in_bytes += len(byte_)
+                #     _block3_list.append(byte_)
+                # self._cls_name_str_rel_pos = block3_cls_name_pos_flag
             else:
                 pass
+        clsname_bytes = self._class_name.encode('utf-16le') + bytes(2)
+        self._cls_name_bytes_len = len(clsname_bytes)
+        _block3_list.append(clsname_bytes)
         self._fn_arg_bytes_list = _block3_list
 
     def _generate_target(self):
@@ -353,14 +363,15 @@ class BVMGenerate(object):
         str_table1_bytes = b''.join(self._str_tbl_bytes_list)
         str_tbl1_size = len(str_table1_bytes)
 
+        # global var strings
         bytes_strtbl2_offset = bytes_strtbl_offset + str_tbl1_size
-        str_table2_bytes = b''.join(
-            self._global_var_bytes_list)    # global var strings
+        str_table2_bytes = b''.join(self._global_var_bytes_list)
         bytes_strtbl3_offset = len(str_table2_bytes) + bytes_strtbl2_offset
         str_table3_bytes = b''.join(self._str_tbl3_list)
         fn_arg_types_offset = bytes_strtbl3_offset + len(str_table3_bytes)
         func_args_cls_types_bytes = b''.join(self._fn_arg_bytes_list)
-        bytes_clsname_offset = fn_arg_types_offset + self._cls_name_str_rel_pos
+        bytes_clsname_offset = fn_arg_types_offset + \
+            len(func_args_cls_types_bytes) - self._cls_name_bytes_len
 
         # global var pos convert
         gbl_var_abs_pos_list = []
@@ -372,13 +383,14 @@ class BVMGenerate(object):
 
         # func_name_bytes building
         named_fn_chunk_byte_list = []
+        amazing_arg_pos = 0
         for k, v in self._named_fn_bytecode_positions.items():
             _1_rel_bytecode_pos = v
             _2_rel_str_pos = self._named_fn_name_str_positions.get(k, 0)
             _2_abs_str_pos = _2_rel_str_pos + bytes_strtbl3_offset
-            _3_rel_arg_pos = self._named_fn_block3_positions.get(k, 0)
-            _3_abs_arg_pos = _3_rel_arg_pos + fn_arg_types_offset
+            _3_abs_arg_pos = amazing_arg_pos + fn_arg_types_offset
             _4_arg_nums = self._named_fn_accept_num.get(k, 0)
+            amazing_arg_pos += _4_arg_nums
             _1 = self._int_to_4bytes(_1_rel_bytecode_pos)
             _2 = self._int_to_4bytes(_2_abs_str_pos)
             _3 = self._int_to_4bytes(_3_abs_arg_pos)

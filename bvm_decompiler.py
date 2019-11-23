@@ -62,13 +62,13 @@ class BvmData:
 
             _index = self._get_int(arg_index)
             _arg_byte = self._get_content_with_size(_index, 1)
-            if _arg_byte in mdl.func_arg_types:
+            if arg_count:
                 types_name = []
-                if arg_count:
-                    types = self._get_content_with_size(_index, arg_count)
-                    for arg_type in types:
-                        arg_type = arg_type.to_bytes(1, self._byteorder)
-                        types_name.append(mdl.func_arg_types.get(arg_type))
+                # if arg_count:
+                types = self._get_content_with_size(_index, arg_count)
+                for arg_type in types:
+                    arg_type = arg_type.to_bytes(1, self._byteorder)
+                    types_name.append(mdl.func_arg_types.get(arg_type))
                 type_str = ', '.join(types_name)
                 if func_return_type_byte != b'\x00':
                     return_type_str = mdl.func_arg_types.get(
@@ -77,8 +77,8 @@ class BvmData:
                     return_type_str = ''
                 return_string = f'\n{func_name}:   /- {return_type_str}({type_str})'
             else:
-                class_name_ = self._get_string(arg_index)
-                return_string = f'\n{class_name_}::{func_name}:'
+                # class_name_ = self._get_string(arg_index)
+                return_string = f'\n{func_name}:'
             self._asm_jmp_mark[jmp_mark_index] = return_string
             if self._debug_mode:
                 print(
