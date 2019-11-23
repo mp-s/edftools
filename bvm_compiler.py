@@ -445,7 +445,7 @@ class BVMGenerate(object):
         with open(file_path, 'wb') as f:
             f.write(b''.join(self._asm_data))
 
-    def build_file(self, file_path):
+    def build_file(self, file_path: Path):
         self._compile_global_variables()
         self._compile_str()
         self._compile_operand()
@@ -454,7 +454,7 @@ class BVMGenerate(object):
         self._compile_named_func()
         bytes_buffer = self._generate_target()
 
-        with open(file=file_path, mode='wb') as f:
+        with file_path.open(mode='wb') as f:
             f.write(bytes_buffer)
 
 

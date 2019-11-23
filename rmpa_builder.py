@@ -104,31 +104,8 @@ class RMPAGenerate:
             sp.name) - abs_pos_start
         return sp.to_bytes_block()
 
-    def _build_route_block(self):
-        # 0x0 当前编号                  必须
-        # 0x4 多少个航点                必须
-        # 0x8 控制下一位置数据块开始     必须
-        # 0x10 数据块结束               必须
-        # 0x14 rmpa id  不生成
-        # 0x18 extra sgo size           有则必须
-        # 0x1c extra sgo offset         有则必须
-        # 0x20 名字长度                 不选择生成
-        # 0x24 字符串偏移               必须
-        # 0x28-0x34 坐标                必须
-        pass
-
-    def _build_shape_block(self, base_dict: dict, abs_pos_start: int):
-        # shape setup:
-        # 0x08  shape's type name
-        # 0x10  shape's define name
-        # 0x24 = 0x18 shape's size data position
-        # (0x30 * setup length + 0x10 * index)
-        pass
-
     def _build_sub_group_base_block_data(self, type_name: str, group_start_pos: int, base_data_list: list) -> bytes:
-        # (type_name, base_data_abs_start_pos, base_groups_list)
-        # 名字字符串最后计算偏移
-        # 生成rmpa id标识
+
         _main_group_data_list = []
         _extra_one_data_list = []
         if type_name == RmpaConfig.type_spawnpoint:
@@ -136,7 +113,7 @@ class RMPAGenerate:
                 block_start_pos = group_start_pos + 0x40 * index
                 _main_group_data_list.append(
                     self._build_spawnpoint_block(base_data_table, block_start_pos))
-            # return b''.join(_main_group_data_list)
+
         elif type_name == RmpaConfig.type_shape:
             shape_size_start_pos = 0x30 * len(base_data_list)
             for index, base_data_table in enumerate(base_data_list):
@@ -144,22 +121,18 @@ class RMPAGenerate:
                 shape = TypeShape(self._byteorder)
                 shape.from_dict(base_data_table)
                 # shape name
-                name_rel_pos = self.pre.fixed_name_at_pos_tbl.get(
+                _name_rel_pos = self.pre.fixed_name_at_pos_tbl.get(
                     shape.name, 0) - block_start_pos
-                shape.name_in_rmpa_pos = name_rel_pos
+                shape.name_in_rmpa_pos = _name_rel_pos
                 # shape type name
-                type_rel_pos = self.pre.fixed_name_at_pos_tbl.get(
+                _type_rel_pos = self.pre.fixed_name_at_pos_tbl.get(
                     shape.shape_type, 0) - block_start_pos
-                shape.shape_type_in_rmpa_pos = type_rel_pos
+                shape.shape_type_in_rmpa_pos = _type_rel_pos
                 # shape size data position
                 shape.size_data_in_rmpa_pos = shape_size_start_pos + 0x10 * index
                 # building block
-                shape_setup_bytes = shape.to_bytes_block()
-
-                shape_size_data_bytes = shape.to_bytes_block_size_data()
-
-                _main_group_data_list.append(shape_setup_bytes)
-                _extra_one_data_list.append(shape_size_data_bytes)
+                _main_group_data_list.append(shape.to_bytes_block())
+                _extra_one_data_list.append(shape.to_bytes_block_size_data())
 
         elif type_name == RmpaConfig.type_route:
             route_block_size = 0x3c * len(base_data_list)
@@ -168,17 +141,16 @@ class RMPAGenerate:
             route_extra_latest_end_pos = 0
             for index, base_data_table in enumerate(base_data_list):
                 block_start_pos = group_start_pos + 0x3c * index
-
                 wp = TypeWayPoint(self._byteorder)
                 wp.from_dict(base_data_table)
-
+                # waypoint name
                 wp.name_in_rmpa_pos = self.pre.fixed_name_at_pos_tbl.get(
                     wp.name, block_start_pos) - block_start_pos
+                # waypoint extra position
                 wp.next_wp_list_blk_in_rmpa_start_pos = route_extra_start_pos + \
                     route_extra_latest_end_pos - 0x3c * index
                 route_block_bytes = wp.to_bytes_block(index)
                 _route_extra_bytes = wp.to_bytes_block_extra()
-
                 route_extra_latest_end_pos += len(_route_extra_bytes)
                 _main_group_data_list.append(route_block_bytes)
                 _extra_one_data_list.append(_route_extra_bytes)
@@ -189,23 +161,19 @@ class RMPAGenerate:
         _2 = b''.join(_extra_one_data_list)
         return _1 + _2
 
-    def run(self, file_path):
+    def generate_rmpa(self, file_path: Path):
 
         some_bytes = b''
-        some_type_names = RmpaConfig.compose_header
         some_flags = []
-        # some_header_pos = [0x30, 0x30, 0x30, 0x30]
         some_header_pos = []
         some_header_start_pos = 0x30
-        # for k, v in self._data_dict.items():
-        for _t_n in some_type_names:
-            k = _t_n
+        for _t_n in RmpaConfig.compose_header:
             v = self._data_dict.get(_t_n)
             some_header_pos.append(some_header_start_pos)
-            if v is None or k == RmpaConfig.type_camera:
+            if v is None or _t_n == RmpaConfig.type_camera:
                 some_flags.append(0)
                 continue
-            block_bytes = self._build_type_block(k, v)
+            block_bytes = self._build_type_block(_t_n, v)
             if len(block_bytes) == 0:
                 some_flags.append(0)
                 continue
@@ -215,15 +183,14 @@ class RMPAGenerate:
             some_header_start_pos += len(block_bytes)
         _byte_rmpa_header = b'\0PMR\0\0\0\1'
         header_info_list = []
-        for tuple_ in zip(some_flags, some_header_pos):
-            header_info_list.append(int_to_4bytes(
-                tuple_[0]) + int_to_4bytes(tuple_[1]))
+        def ui_b(_n): return util.uint_to_4bytes(_n, self._byteorder)
+        for _flag, _pos in zip(some_flags, some_header_pos):
+            header_info_list.append(ui_b(_flag) + ui_b(_pos))
 
-        _byte_header = _byte_rmpa_header + \
-            b''.join(header_info_list) + bytes(8)
-
-        with open(file=file_path, mode='wb') as f:
-            f.write(_byte_header)
+        with file_path.open(mode='wb') as f:
+            f.write(_byte_rmpa_header)
+            f.write(b''.join(header_info_list))
+            f.write(bytes(8))
             f.write(some_bytes)
             f.write(self.pre.name_table_bytes)
 
@@ -389,7 +356,7 @@ def main():
     if '.json' == source_path.suffix.lower():
         print('working..')
         a = RMPAGenerate(source_path, args.debug)
-        a.run(output_path)
+        a.generate_rmpa(output_path)
         print('done!')
 
 

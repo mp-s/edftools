@@ -216,6 +216,10 @@ class BvmData:
 
         return '\n'.join(out_buffer)
 
+    def output_file(self, output_path: Path):
+        with output_path.open('w', encoding='utf-8') as f:
+            f.write(self.output_data())
+
     def get_all_str(self):
         '''debug test'''
         def _get_offset(offset_name: str) -> int:
@@ -310,8 +314,7 @@ def run_main():
     if '.bvm' == source_path.suffix.lower():
         print('working...')
         bvm_ = BvmData(source_path, debug_flag=args.debug)
-        with output_path.open(mode='w', encoding='utf-8') as f:
-            f.write(bvm_.output_data())
+        bvm_.output_file(output_path)
         print('done!')
 
 
