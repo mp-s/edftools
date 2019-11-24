@@ -96,7 +96,7 @@ class BVMGenerate(object):
                     opcode = _l[0]
                     line_bytecode = mdl.compiler_bytecode(opcode)
                 else:
-                    opcode, operand = _l
+                    opcode, operand, *_ = _l
                     if '0x' in operand:
                         operand = bytes.fromhex(operand[2:])
                     elif opcode == 'push':
