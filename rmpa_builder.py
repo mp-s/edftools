@@ -135,10 +135,10 @@ class RMPAGenerate:
                 _extra_one_data_list.append(shape.to_bytes_block_size_data())
 
         elif type_name == RmpaConfig.type_route:
-            route_block_size = 0x3c * len(base_data_list)
-            route_block_padding_size = (0x10 - route_block_size % 0x10) % 0x10
-            route_extra_start_pos = route_block_size + route_block_padding_size
-            route_extra_latest_end_pos = 0
+            wp_block_size = 0x3c * len(base_data_list)
+            wp_blk_padding_size = (0x10 - wp_block_size % 0x10) % 0x10
+            wp_extra_start_pos = wp_block_size + wp_blk_padding_size
+            wp_extra_latest_end_pos = 0
             for index, base_data_table in enumerate(base_data_list):
                 block_start_pos = group_start_pos + 0x3c * index
                 wp = TypeWayPoint(self._byteorder)
@@ -147,14 +147,14 @@ class RMPAGenerate:
                 wp.name_in_rmpa_pos = self.pre.name_abs_pos(
                     wp.name, block_start_pos) - block_start_pos
                 # waypoint extra position
-                wp.next_wp_list_blk_in_rmpa_start_pos = route_extra_start_pos + \
-                    route_extra_latest_end_pos - 0x3c * index
-                route_block_bytes = wp.to_bytes_block(index)
-                _route_extra_bytes = wp.to_bytes_block_extra()
-                route_extra_latest_end_pos += len(_route_extra_bytes)
-                _main_group_data_list.append(route_block_bytes)
-                _extra_one_data_list.append(_route_extra_bytes)
-            _main_group_data_list.append(bytes(route_block_padding_size))
+                wp.next_wp_list_blk_in_rmpa_start_pos = wp_extra_start_pos + \
+                    wp_extra_latest_end_pos - 0x3c * index
+                wp_block_bytes = wp.to_bytes_block(index)
+                _wp_extra_bytes = wp.to_bytes_block_extra()
+                wp_extra_latest_end_pos += len(_wp_extra_bytes)
+                _main_group_data_list.append(wp_block_bytes)
+                _extra_one_data_list.append(_wp_extra_bytes)
+            _main_group_data_list.append(bytes(wp_blk_padding_size))
         else:
             pass
         _1 = b''.join(_main_group_data_list)

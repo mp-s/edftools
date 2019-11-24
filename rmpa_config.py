@@ -255,12 +255,12 @@ class TypeShape:
         self.rectangle_angle = g_f(0x24)
         self.shape_diameter = g_f(0x30)
         self.shape_height = g_f(0x34)
-        self.shape_size_data = [
-            self.position[0], self.position[1], self.position[2],
-            self.rectangle_size[0], self.rectangle_size[1], self.rectangle_size[2],
-            0.0, self.rectangle_angle,
-            self.shape_diameter, self.shape_height,
-        ]
+        # self.shape_size_data = [
+        #     self.position[0], self.position[1], self.position[2],
+        #     self.rectangle_size[0], self.rectangle_size[1], self.rectangle_size[2],
+        #     0.0, self.rectangle_angle,
+        #     self.shape_diameter, self.shape_height,
+        # ]
 
     def to_dict(self, debug_flag: bool = False):
         if self.name is None or \
@@ -298,8 +298,8 @@ class TypeShape:
         return block_bytes
 
     def to_bytes_block_size_data(self):
-        # if self.shape_size_data is None:
-        #     return bytes()
+        if self.position is None:
+            return bytes(0x40)
 
         def any_f_b(_n) -> bytes:
             return util.float_to_4bytes(float(_n), self._byteorder)
