@@ -3,24 +3,24 @@
 ## Required: Python 3.6+
 
 ### Usage: ##   
-- If Windows has a Python interpreter associated with .py, drag and drop supported.  
+- If Windows has a Python interpreter associated with .py:
+    - drag and drop to `.py` supported.  
+    - run `.py` and drag input file supported.  
 - Command Prompt:
-    - using interpreter: `python <foo.py> <infile> [outfile]`
-    - using launcher: `py -3 <foo.py> <infile> [outfile]`
-- Example:
-    - BVM:
-        + BVM -> assembly script:  
-        `python bvm_decompiler.py "mission.bvm"`   
-        + assembly script -> BVM:  
-         `python bvm_compiler.py "test.asm"`  
-    - RMPA:
-        - RMPA -> json:  
-         `python rmpa_parser.py "test.rmpa"`   
-        - json -> RMPA:  
-         `python rmpa_builder.py "test-rmpa.json"`   
-            - *supported:`"route type"`  ` "shape type"`  ` "spawnpoint type"`   
-            - *camera type in json will ignore*  
-            - *Recommended using sample-rmpa.json to generate*   
+    - using interpreter: `python <foo.py> [args]`
+    - using launcher: `py -3 <foo.py> [args]`
+    ```bash
+    usage: *foo*.py [-h] [-d] [-t] [source_path] [destination_path]
+
+    positional arguments:
+      source_path       input file path
+      destination_path  output file path
+
+    optional arguments:
+      -h, --help        show this help message and exit
+      -d, --debug       enable debug mode
+      -t
+    ```
     - Target file are same path with source file.
   
   
