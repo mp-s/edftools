@@ -9,10 +9,10 @@
 - Command Prompt:
     - using interpreter: `python <foo.py> [args]`
     - using launcher: `py -3 <foo.py> [args]`
-    ```bash
+    ```
     usage: *foo*.py [-h] [-d] [-t] [source_path] [destination_path]
 
-    positional arguments:
+    positional arguments: *optional
       source_path       input file path
       destination_path  output file path
 
@@ -21,8 +21,24 @@
       -d, --debug       enable debug mode
       -t
     ```
-    - Target file are same path with source file.
-  
+| Executable tool |
+|---|
+| bvm_compiler.py   |
+| bvm_decompiler.py |
+| rmpa_parser.py    |
+| rmpa_builder.py   |
+
+- Dependent file
+    bvm_model.py  
+    common_utils.py  
+    rmpa_config.py  
+
+
+
+- ***About RMPA_builder:***  
+        - *supported:`"route type"`  ` "shape type"`  ` "spawnpoint type"`   
+        - *camera type in json will ignore*  
+        - *Recommended using sample-rmpa.json to generate*   
   
 ### Extra Tool:
 - AWE:
@@ -35,9 +51,11 @@
     - ``` edf41-coordinates-test-github-public.zip ```  
         - test Missions list Assisted by AUK233  
   
+- asm file more function comments:  
+    - `asm_more_readable.py foo.asm`  
 - more Documents in Documents/  
 
-- Chinese Only: _简易hex与浮点转换辅助_ &nbsp;:    
+- Only Chinese: _简易hex与浮点转换辅助_ &nbsp;:    
     _双击打开 `simple_ieee754_float_convert.py`_  
 
 ## Thanks

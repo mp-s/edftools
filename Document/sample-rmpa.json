@@ -1,40 +1,54 @@
 {
   "route": {
-    "type group name": "",
-    "sub groups": [
+    "Type Group Name": "",
+    "sub Enum Groups": [
       {
-        "sub group name": "小隊01",
-        "base data": [
+        "sub Enum Group Name": "小隊01",
+        "base Data": [
           {
+            "WayPoint Number": 0,
             "name": "旧小隊01ルート1",
-            "positions": [-882.570556640625, 11.460774421691895, -515.981201171875],
-            "rmpa_float_WayPointWidth": -1.0,
-            "comments_rmpa_float_WayPointWidth": "必须是数字, 不存在时使用带双引号的False",
-            "comments_rmpa_float_WayPointWidthEN": "Numbers Only, if unused this number, paste 'Double quotes False'.",
-            "route number": 0,
-            "current->next number": [5, 2],
-            "comments_next_number": "里面放的是下个路径编号数据列表.",
-            "comments_next_numberEN": "next waypoint numbers list."
-          },
-          {
-            "name": "名無し",
-            "positions": [-744.50439453125, 44.809478759765625, -213.06134033203125],
-            "rmpa_float_WayPointWidth": -1.0,
-            "route number": 1,
-            "current->next number": [3, 4]
-          },
-          {
-            "name": "名無し",
             "positions": [
-              -873.5757446289062, 7.955313205718994, -436.73614501953125
+              -882.570556640625,
+              11.460774421691895,
+              -515.981201171875
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 2,
-            "current->next number": [
-              0, 3
+            "next WayPoint Number List": [
+              5,
+              2
             ]
           },
           {
+            "WayPoint Number": 1,
+            "name": "名無し",
+            "positions": [
+              -744.50439453125,
+              44.809478759765625,
+              -213.06134033203125
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "next WayPoint Number List": [
+              3,
+              4
+            ]
+          },
+          {
+            "WayPoint Number": 2,
+            "name": "名無し",
+            "positions": [
+              -873.5757446289062,
+              7.955313205718994,
+              -436.73614501953125
+            ],
+            "rmpa_float_WayPointWidth": -1.0,
+            "next WayPoint Number List": [
+              0,
+              3
+            ]
+          },
+          {
+            "WayPoint Number": 3,
             "name": "名無し",
             "positions": [
               -827.1873779296875,
@@ -42,13 +56,13 @@
               -360.4690246582031
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 3,
-            "current->next number": [
+            "next WayPoint Number List": [
               1,
               2
             ]
           },
           {
+            "WayPoint Number": 4,
             "name": "名無し",
             "positions": [
               -748.4446411132812,
@@ -56,12 +70,12 @@
               -153.74696350097656
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 4,
-            "current->next number": [
+            "next WayPoint Number List": [
               1
             ]
           },
           {
+            "WayPoint Number": 5,
             "name": "小隊01ルート1",
             "positions": [
               -842.8159790039062,
@@ -69,17 +83,17 @@
               -582.5291748046875
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 5,
-            "current->next number": [
+            "next WayPoint Number List": [
               0
             ]
           }
         ]
       },
       {
-        "sub group name": "小隊02ルート",
-        "base data": [
+        "sub Enum Group Name": "小隊02ルート",
+        "base Data": [
           {
+            "WayPoint Number": 0,
             "name": "旧小隊02ルート1",
             "positions": [
               -872.7969970703125,
@@ -87,13 +101,13 @@
               -488.7619934082031
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 0,
-            "current->next number": [
+            "next WayPoint Number List": [
               1,
               5
             ]
           },
           {
+            "WayPoint Number": 1,
             "name": "名無し",
             "positions": [
               -858.9456787109375,
@@ -101,13 +115,13 @@
               -403.1073913574219
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 1,
-            "current->next number": [
+            "next WayPoint Number List": [
               0,
               2
             ]
           },
           {
+            "WayPoint Number": 2,
             "name": "名無し",
             "positions": [
               -833.501220703125,
@@ -115,13 +129,13 @@
               -308.5091247558594
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 2,
-            "current->next number": [
+            "next WayPoint Number List": [
               1,
               3
             ]
           },
           {
+            "WayPoint Number": 3,
             "name": "名無し",
             "positions": [
               -717.8078002929688,
@@ -129,13 +143,13 @@
               -218.84117126464844
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 3,
-            "current->next number": [
+            "next WayPoint Number List": [
               2,
               4
             ]
           },
           {
+            "WayPoint Number": 4,
             "name": "名無し",
             "positions": [
               -725.8673095703125,
@@ -143,12 +157,12 @@
               -175.419677734375
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 4,
-            "current->next number": [
+            "next WayPoint Number List": [
               3
             ]
           },
           {
+            "WayPoint Number": 5,
             "name": "小隊02ルート1",
             "positions": [
               -834.515625,
@@ -156,8 +170,7 @@
               -566.9660034179688
             ],
             "rmpa_float_WayPointWidth": -1.0,
-            "route number": 5,
-            "current->next number": [
+            "next WayPoint Number List": [
               0
             ]
           }
@@ -166,107 +179,140 @@
     ]
   },
   "shape": {
-    "type group name": "",
-    "sub groups": [
+    "Type Group Name": "",
+    "sub Enum Groups": [
       {
-        "sub group name": "ufo",
-        "base data": [
+        "sub Enum Group Name": "ufo",
+        "base Data": [
           {
             "shape type name": "Cylinder",
-            "Shpe_type_comments": "Case Sensitive Using: Cylinder, Sphere, Rectangle",
-            "shape var name": "ufo01",
-            "shape positions data": [
-              172.90692138671875, 21.594253540039062, -140.34335327148438,
-              0.0, 0.0, 0.0,
-              0.0,
-              0.0,
-              150.0, 150.0
+            "name": "ufo01",
+            "shape center position": [
+              172.90692138671875,
+              21.594253540039062,
+              -140.34335327148438
             ],
-            "shape_pos_comments": "center? x,y,z, length x,y,z,",
-            "shape_pos_comments2": "0.0, Rectangle unknown?",
-            "Shape_pos_comments3": "Cylinder/Sphere diameter, cylinder height"
+            "Rectangle size_XYZ": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "Rectangle angle": 0.0,
+            "Sphere OR Cylinder diameter": 150.0,
+            "Cylinder height": 150.0
           },
           {
             "shape type name": "Sphere",
-            "shape var name": "破壊01",
-            "shape positions data": [
-              428.0, 0.0, 87.0,
-              0.0, 0.0, 0.0,
+            "name": "破壊01",
+            "shape center position": [
+              428.0,
+              0.0,
+              87.0
+            ],
+            "Rectangle size_XYZ": [
               0.0,
               0.0,
-              100.0,
               0.0
-            ]
+            ],
+            "Rectangle angle": 0.0,
+            "Sphere OR Cylinder diameter": 100.0,
+            "Cylinder height": 0.0
           },
           {
             "shape type name": "Rectangle",
-            "shape var name": "敵02_3",
-            "shape positions data": [
-              229.0421142578125, 1000.0, -257.736328125,
-              44.661224365234375, 20.0, 46.90301513671875,
-              0.0,
-              0.0,
-              0.0,
-              0.0
-            ]
+            "name": "敵02_3",
+            "shape center position": [
+              229.0421142578125,
+              1000.0,
+              -257.736328125
+            ],
+            "Rectangle size_XYZ": [
+              44.661224365234375,
+              20.0,
+              46.90301513671875
+            ],
+            "Rectangle angle": 0.0,
+            "Sphere OR Cylinder diameter": 0.0,
+            "Cylinder height": 0.0
           }
         ]
       }
     ]
   },
-  "spawnpoint": {
-    "type group name": "",
-    "sub groups": [
+  "SpawnPoint": {
+    "Type Group Name": "",
+    "sub Enum Groups": [
       {
-        "sub group name": "player",
-        "base data": [
+        "sub Enum Group Name": "player",
+        "base Data": [
           {
             "name": "squad1",
             "positions_1": [
-              -67.55000305175781, 22.67099952697754, -119.86699676513672
+              -67.55000305175781,
+              22.67099952697754,
+              -119.86699676513672
             ],
             "positions_2": [
-              -67.55000305175781, 22.67099952697754, -109.25
+              -67.55000305175781,
+              22.67099952697754,
+              -109.25
             ]
           },
           {
             "name": "player",
             "positions_1": [
-              -75.17400360107422, 22.75, -150.4770050048828
+              -75.17400360107422,
+              22.75,
+              -150.4770050048828
             ],
             "positions_2": [
-              -75.17400360107422, 22.75, -140.4770050048828
+              -75.17400360107422,
+              22.75,
+              -140.4770050048828
             ]
           },
           {
             "name": "squad2",
-            "positions_1": [ -80.802001953125, 22.538000106811523, -119.86699676513672
+            "positions_1": [
+              -80.802001953125,
+              22.538000106811523,
+              -119.86699676513672
             ],
             "positions_2": [
-              -80.802001953125, 22.67099952697754, -109.86699676513672
+              -80.802001953125,
+              22.67099952697754,
+              -109.86699676513672
             ]
           }
         ]
       },
       {
-        "sub group name": "enemy",
-        "base data": [
+        "sub Enum Group Name": "enemy",
+        "base Data": [
           {
             "name": "グレイ",
             "positions_1": [
-              -75.72130584716797, 11.655447959899902, 127.99051666259766
+              -75.72130584716797,
+              11.655447959899902,
+              127.99051666259766
             ],
             "positions_2": [
-              -74.74251556396484, 12.635226249694824, 109.32823944091797
+              -74.74251556396484,
+              12.635226249694824,
+              109.32823944091797
             ]
           },
           {
             "name": "カエル",
             "positions_1": [
-              -286.364990234375, 14.981669425964355, -1.7476880550384521
+              -286.364990234375,
+              14.981669425964355,
+              -1.7476880550384521
             ],
             "positions_2": [
-              -268.818115234375, 14.975733757019043, 7.611058235168457
+              -268.818115234375,
+              14.975733757019043,
+              7.611058235168457
             ]
           }
         ]
