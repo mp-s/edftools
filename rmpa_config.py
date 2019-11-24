@@ -22,12 +22,16 @@ class RmpaConfig:
     route_position = 'positions'
     route_next_block = "next WayPoint Number List"
     waypoint_width = 'rmpa_float_WayPointWidth'
-    # empty_waypoint_width = 'empty'
 
     type_shape = 'shape'
     shape_type_name = 'shape type name'
     shape_variable_name = 'shape var name'
     shape_position_data = 'shape positions data'
+    s_center_point = 'shape center position'
+    s_rectangle_size = 'Rectangle size_XYZ'
+    s_rectangle_angle = 'Rectangle angle'
+    s_diameter = 'Sphere OR Cylinder diameter'
+    s_cylinder_height = 'Cylinder height'
 
     type_camera = 'camera'
 
@@ -209,7 +213,7 @@ class TypeShape:
         # more detail in size_data
         self.position = None
         self.rectangle_size = None
-        self.rectangle_extra = None
+        self.rectangle_angle = None
         self.shape_diameter = None
         self.shape_height = None
 
@@ -218,7 +222,12 @@ class TypeShape:
         self.name = dg(RmpaConfig.base_name)
         self.shape_type = dg(RmpaConfig.shape_type_name)
 
-        self.shape_size_data = dg(RmpaConfig.shape_position_data)
+        # self.shape_size_data = dg(RmpaConfig.shape_position_data)
+        self.position = dg(RmpaConfig.s_center_point)
+        self.rectangle_size = dg(RmpaConfig.s_rectangle_size)
+        self.rectangle_angle = dg(RmpaConfig.s_rectangle_angle)
+        self.shape_diameter = dg(RmpaConfig.s_diameter)
+        self.shape_height = dg(RmpaConfig.s_cylinder_height)
 
     def from_bytes_block(self, block: bytes):
         if len(block) != 0x30:
@@ -243,25 +252,29 @@ class TypeShape:
 
         self.position = [g_f(0x00), g_f(0x04), g_f(0x08)]
         self.rectangle_size = [g_f(0x10), g_f(0x14), g_f(0x18)]
-        self.rectangle_extra = g_f(0x24)
+        self.rectangle_angle = g_f(0x24)
         self.shape_diameter = g_f(0x30)
         self.shape_height = g_f(0x34)
         self.shape_size_data = [
             self.position[0], self.position[1], self.position[2],
             self.rectangle_size[0], self.rectangle_size[1], self.rectangle_size[2],
-            0.0, self.rectangle_extra,
+            0.0, self.rectangle_angle,
             self.shape_diameter, self.shape_height,
         ]
 
     def to_dict(self, debug_flag: bool = False):
         if self.name is None or \
-                self.shape_type is None or \
-                self.shape_size_data is None:
+                self.shape_type is None:
             return dict()
         return {
             RmpaConfig.shape_type_name: self.shape_type,
             RmpaConfig.base_name: self.name,
-            RmpaConfig.shape_position_data: self.shape_size_data,
+            # RmpaConfig.shape_position_data: self.shape_size_data,
+            RmpaConfig.s_center_point: self.position,
+            RmpaConfig.s_rectangle_size: self.rectangle_size,
+            RmpaConfig.s_rectangle_angle: self.rectangle_angle,
+            RmpaConfig.s_diameter: self.shape_diameter,
+            RmpaConfig.s_cylinder_height: self.shape_height,
         }
 
     def to_bytes_block(self):
@@ -285,17 +298,22 @@ class TypeShape:
         return block_bytes
 
     def to_bytes_block_size_data(self):
-        if self.shape_size_data is None:
-            return bytes()
+        # if self.shape_size_data is None:
+        #     return bytes()
 
         def any_f_b(_n) -> bytes:
             return util.float_to_4bytes(float(_n), self._byteorder)
-        list_ = list(map(any_f_b, self.shape_size_data))
+        # list_ = list(map(any_f_b, self.shape_size_data))
+        pos = b''.join(map(any_f_b, self.position))
+        rectangle_size = b''.join(map(any_f_b, self.rectangle_size))
+        rectangle_angle = any_f_b(self.rectangle_angle)
+        s_diameter = any_f_b(self.shape_diameter)
+        s_height = any_f_b(self.shape_height)
         shape_size_data_bytes = b''.join([
-            list_[0], list_[1], list_[2], bytes(4),
-            list_[3], list_[4], list_[5], bytes(4),
-            list_[6], list_[7], bytes(8),
-            list_[8], list_[9], bytes(8),
+            pos, bytes(4),
+            rectangle_size, bytes(4),
+            bytes(4), rectangle_angle, bytes(8),
+            s_diameter, s_height, bytes(8),
         ])
         return shape_size_data_bytes
 
