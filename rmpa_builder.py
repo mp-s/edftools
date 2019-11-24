@@ -44,7 +44,7 @@ class RMPAGenerate:
             base_item_count = len(base_groups_list)
 
             self_head_abs_pos = sub_groups_abs_start_pos + index * 0x20
-            _2_name_pos_int = self.pre.fixed_name_at_pos_tbl.get(
+            _2_name_pos_int = self.pre.name_abs_pos(
                 sub_group_name) - self_head_abs_pos
 
             remain_sub_groups_count = sub_groups_count - index
@@ -79,7 +79,7 @@ class RMPAGenerate:
             sub_dict_length: int,
             type_header_abs_pos: int) -> bytes:
         _bytes_0x00 = int_to_4bytes(sub_dict_length)
-        _type_name_abs_pos = self.pre.fixed_name_at_pos_tbl.get(
+        _type_name_abs_pos = self.pre.name_abs_pos(
             type_str_name, type_header_abs_pos)
         _bytes_0x18 = int_to_4bytes(_type_name_abs_pos - type_header_abs_pos)
         block_bytes = b''.join([
@@ -100,7 +100,7 @@ class RMPAGenerate:
     def _build_spawnpoint_block(self, base_dict: dict, abs_pos_start: int) -> bytes:
         sp = TypeSpawnPoint(self._byteorder)
         sp.from_dict(base_dict)
-        sp.name_in_rmpa_pos = self.pre.fixed_name_at_pos_tbl.get(
+        sp.name_in_rmpa_pos = self.pre.name_abs_pos(
             sp.name) - abs_pos_start
         return sp.to_bytes_block()
 
@@ -121,11 +121,11 @@ class RMPAGenerate:
                 shape = TypeShape(self._byteorder)
                 shape.from_dict(base_data_table)
                 # shape name
-                _name_rel_pos = self.pre.fixed_name_at_pos_tbl.get(
+                _name_rel_pos = self.pre.name_abs_pos(
                     shape.name, 0) - block_start_pos
                 shape.name_in_rmpa_pos = _name_rel_pos
                 # shape type name
-                _type_rel_pos = self.pre.fixed_name_at_pos_tbl.get(
+                _type_rel_pos = self.pre.name_abs_pos(
                     shape.shape_type, 0) - block_start_pos
                 shape.shape_type_in_rmpa_pos = _type_rel_pos
                 # shape size data position
@@ -144,7 +144,7 @@ class RMPAGenerate:
                 wp = TypeWayPoint(self._byteorder)
                 wp.from_dict(base_data_table)
                 # waypoint name
-                wp.name_in_rmpa_pos = self.pre.fixed_name_at_pos_tbl.get(
+                wp.name_in_rmpa_pos = self.pre.name_abs_pos(
                     wp.name, block_start_pos) - block_start_pos
                 # waypoint extra position
                 wp.next_wp_list_blk_in_rmpa_start_pos = route_extra_start_pos + \
@@ -211,17 +211,21 @@ class RMPAJsonPreprocess:
         self._node_type_name = None
         self.base_data_count_table = {}
         self._route_extra_data_size_list = []
-        self._read_node()
+        self._read_node(json_dict)
 
-        self.fixed_name_at_pos_tbl = self.abs_str_tbl()
+        self.__name_abs_pos = self._str_tbl_with_abs_pos()
         self.name_table_bytes = self.name_bytes()
+
+    @property
+    def name_abs_pos(self):
+        return self.__name_abs_pos.get
 
     def name_bytes(self) -> bytes:
         if len(self.name_byte_list) == 0:
-            self._read_node()
+            self._read_node(self._json_dict)
         return b''.join(self.name_byte_list)
 
-    def _name_pos_prediction(self) -> int:
+    def _name_tbl_start_pos_predict(self) -> int:
         _1_rmpa_header = 0x30
 
         self.route_block_size = self.type_block_size_predict(
@@ -258,7 +262,7 @@ class RMPAJsonPreprocess:
         type_block_size = type_header_size + sub_header_size + sub_data_size
         return type_block_size
 
-    def _route_type_extra_blk_propress(self, base_data_list: list):
+    def _waypoint_extra_blk_propress(self, base_data_list: list):
         for route_item in base_data_list:
             next_list = route_item.get(RmpaConfig.route_next_block, list())
             extra_sgo = route_item.get(RmpaConfig.waypoint_width)
@@ -271,14 +275,12 @@ class RMPAJsonPreprocess:
             extra_size = next_route_blk_size + extra_sgo_size
             self._route_extra_data_size_list.append(extra_size)
 
-    def abs_str_tbl(self) -> dict:
-        append_pos = self._name_pos_prediction()
+    def _str_tbl_with_abs_pos(self) -> dict:
+        append_pos = self._name_tbl_start_pos_predict()
         d_ = {k: v+append_pos for k, v in self._name_str_tbl.items()}
         return d_
 
-    def _read_node(self, dict_: dict = None):
-        if dict_ == None:
-            dict_ = self._json_dict
+    def _read_node(self, dict_: dict):
         key_list = [
             RmpaConfig.base_name,
             RmpaConfig.shape_type_name,
@@ -309,7 +311,7 @@ class RMPAJsonPreprocess:
             sub_groups_base.append(list_count)
             self.base_data_count_table[self._node_type_name] = sub_groups_base
             if self._node_type_name == RmpaConfig.type_route:
-                self._route_type_extra_blk_propress(list_)
+                self._waypoint_extra_blk_propress(list_)
                 pass
         for item in list_:
             if type(item) == dict:
