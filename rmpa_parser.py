@@ -206,7 +206,7 @@ class RMPAParse:
         import json
         # print(_struct)
         self._read_struct()
-        with output_path.open('w', encoding='utf-8') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(self._struct, f, ensure_ascii=False, indent=2)
 
     def get_all_string(self):

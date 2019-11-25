@@ -187,7 +187,7 @@ class RMPAGenerate:
         for _flag, _pos in zip(some_flags, some_header_pos):
             header_info_list.append(ui_b(_flag) + ui_b(_pos))
 
-        with file_path.open(mode='wb') as f:
+        with open(file_path, mode='wb') as f:
             f.write(_byte_rmpa_header)
             f.write(b''.join(header_info_list))
             f.write(bytes(8))

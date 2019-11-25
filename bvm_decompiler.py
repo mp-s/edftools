@@ -217,7 +217,7 @@ class BvmData:
         return '\n'.join(out_buffer)
 
     def output_file(self, output_path: Path):
-        with output_path.open('w', encoding='utf-8') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(self.output_data())
 
     def get_all_str(self):

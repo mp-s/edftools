@@ -454,7 +454,7 @@ class BVMGenerate(object):
         self._compile_named_func()
         bytes_buffer = self._generate_target()
 
-        with file_path.open(mode='wb') as f:
+        with open(file_path, mode='wb') as f:
             f.write(bytes_buffer)
 
 
