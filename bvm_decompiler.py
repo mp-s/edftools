@@ -213,7 +213,12 @@ class BvmData:
                     f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {comment_str}')
             else:
                 out_buffer.append('  '.join(values))
-
+        try:
+            import asm_more_readable
+        except ImportError as e:
+            print(e)
+        else:
+            out_buffer = asm_more_readable.additional_jmp_comments(out_buffer)
         return '\n'.join(out_buffer)
 
     def output_file(self, output_path: Path):
