@@ -1,3 +1,4 @@
+import argparse
 import mmap
 from pathlib import Path
 
@@ -143,7 +144,25 @@ def util_read_4bytes_to_int(
 
 
 def run_main():
-    with RABExtract(Path) as rab:
+    args = parse_args()
+
+    if args.test:
+        run_test()
+        return None
+
+    if args.source_path is None and args.input is None:
+        str_ = input('drag file here and press Enter: ')
+        source_path = Path(str_.strip('"'))
+    elif args.source_path:
+        source_path = Path(args.source_path)
+    elif args.input:
+        source_path = Path(args.input)
+
+
+    with RABExtract(source_path) as rab:
+        rab.read_header()
+        rab.read_file_info()
+        rab.read_dir_id()
         rab.extract()
 
 
@@ -156,6 +175,18 @@ def run_test():
         rabObj.read_dir_id()
         rabObj.extract()
 
+def parse_args():
+    description = 'RAB Extractor'
+    parse = argparse.ArgumentParser(description=description)
+
+    help_ = 'RAB file path'
+    group = parse.add_mutually_exclusive_group()
+    group.add_argument('source_path', help=help_, nargs='?')
+
+    group.add_argument('-i', '--input', help=help_)
+    parse.add_argument('-t', '--test', action='store_true')
+
+    return parse.parse_args()
 
 if __name__ == "__main__":
-    run_test()
+    run_main()

@@ -22,7 +22,7 @@
       -t
     ```
 | Executable tool |
-|---|
+|------------------|
 | bvm_compiler.py   |
 | bvm_decompiler.py |
 | rmpa_parser.py    |
@@ -42,8 +42,23 @@
   
 ### Extra Tool:
 - AWE:
-    - using "VGMToolbox" AWB Archive extractor, get extracted directory
-    - then run "awe_parse.py", follow the prompts.
+    - using `VGMToolbox` AWB Archive extractor, get extracted directory
+    - then run `awe_parse.py`, follow the prompts.
+
+
+- RAB and MRAB ***extract only***:
+    -   ```
+        usage: rab_exract.py [-i INPUT] [source_path]
+
+        RAB Extractor
+
+        positional arguments:
+        source_path                 RAB file path
+
+        optional arguments:
+        -i INPUT, --input INPUT     RAB file path
+        ```  
+
 
 - Assisted coordinates mods:
     - **Cheat Table Required: Cheat Engine 7.0+**
