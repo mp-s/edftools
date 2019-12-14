@@ -95,6 +95,8 @@ class BVMGenerate(object):
                 if len(_l) == 1:
                     opcode = _l[0]
                     line_bytecode = mdl.compiler_bytecode(opcode)
+                elif len(_l) == 0:
+                    continue
                 else:
                     opcode, operand, *_ = _l
                     if '0x' in operand:
