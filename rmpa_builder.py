@@ -8,13 +8,15 @@ from rmpa_config import *
 
 class RMPAGenerate:
 
-    def __init__(self, file_path, debug_flag: bool = False, *args, **kwargs):
+    def __init__(self, debug_flag: bool = False, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        with open(file_path, 'r', encoding='utf-8') as f:
-            self._data_dict = json.load(f)
-        self.pre = RMPAJsonPreprocess(self._data_dict, debug_flag)
         self._debug_flag = debug_flag
         self._byteorder = 'big'
+
+    def read(self, file_path: str):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            self._data_dict = json.load(f)
+        self.pre = RMPAJsonPreprocess(self._data_dict, self._debug_flag)
 
     def _build_type_block(self, type_name, type_dict):
         #  子头个数
@@ -334,13 +336,6 @@ def float_to_4bytes(number: float) -> bytes:
     return struct.pack('>f', number)
 
 
-def test_preprocess():
-    with open(r'D:\arena\EARTH DEFENSE FORCE 5\r\MISSION\DLC\DM024\MISSION.json', 'r', encoding='utf-8') as f:
-        jsonstr = f.read()
-    q = json.loads(jsonstr)
-    p = RMPAJsonPreprocess(q, debug_flag=True)
-
-
 def main():
     args = parse_args()
 
@@ -357,7 +352,8 @@ def main():
 
     if '.json' == source_path.suffix.lower():
         print('working..')
-        a = RMPAGenerate(source_path, args.debug)
+        a = RMPAGenerate(args.debug)
+        a.read(source_path)
         a.generate_rmpa(output_path)
         print('done!')
 

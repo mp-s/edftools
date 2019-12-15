@@ -8,8 +8,15 @@ import common_utils as util
 
 class BvmData:
 
-    def __init__(self, file_path: str, debug_flag: bool = False):
+    def __init__(self, debug_flag: bool = False):
         self._debug_mode = debug_flag
+
+        self._global_vars = {}
+        self._asm_jmp_mark = {}
+        self._construct_lines = {}
+        self._asm_lines = {}
+
+    def read(self, file_path: str):
         with open(file_path, 'rb') as f:
             self.data = f.read()
         if (self.data[0:4] == b'BVM '):
@@ -19,10 +26,6 @@ class BvmData:
             self._byteorder = 'big'
             self._encoding = 'utf-16be'
         self._read_header()
-        self._global_vars = {}
-        self._asm_jmp_mark = {}
-        self._construct_lines = {}
-        self._asm_lines = {}
 
     def _read_header(self):
         def get_btoi(offset: int) -> int:
@@ -318,7 +321,8 @@ def run_main():
 
     if '.bvm' == source_path.suffix.lower():
         print('working...')
-        bvm_ = BvmData(source_path, debug_flag=args.debug)
+        bvm_ = BvmData(debug_flag=args.debug)
+        bvm_.read(source_path)
         bvm_.output_file(output_path)
         print('done!')
 
