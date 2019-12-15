@@ -44,7 +44,7 @@ def additional_jmp_comments(file_data: List[str], debug_flag: bool = False):
             if comments:
                 line = line + '   // ' + comments + '\n'
             else:
-                pass
+                line += '\n'
         elif 'cuscall' in line or \
                 'store' == line.strip() or \
                 'cvtstore' in line:
