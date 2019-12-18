@@ -149,6 +149,8 @@ class BvmData:
                     # 添加注释
                     if opcode_asm == 'cuscall0':
                         comments = mdl.call_func_types.get(operand_str, None)
+                    elif opcode_asm == 'cuscall1':
+                        comments = mdl.call2_comments.get(operand_str, None)
                 elif opcode_asm in operands_use_offset:
                     operand_int = int(self._convert_operand2(operand))
                     mark_offset = _opcode_offset + operand_int

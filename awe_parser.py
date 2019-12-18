@@ -2,30 +2,51 @@ import os
 
 string_list = []
 name_num_lst = []
+
+class AWEParse:
+    pass
+
+class AWBParse:
+    pass
+
+class ExtractFileInfo:
+    def __init__(self):
+        super().__init__()
+        self.file_num = None
+        self.file_name = None
+        self.file_content_pos = None
+
 def read(awb_path: str):
     with open(file=awb_path, mode='rb') as f:
         _data = f.read()
     return _data
 
-def parser_awe(bytes_data:bytes):
+
+def byteToInt(bytes_: bytes) -> int:
+    return int.from_bytes(bytes_, byteorder='little')
+
+
+def parser_awe(bytes_data: bytes):
     current_offset = 0x08
     files_count_byte = bytes_data[current_offset:current_offset+4]
-    file_count = int.from_bytes(files_count_byte, byteorder='little')
+    file_count = byteToInt(files_count_byte)
     for pos in range(file_count):
         read_offset = pos * 4 + 0x14
         file_name_pos = bytes_data[read_offset:read_offset+4]
-        name_pos_int = int.from_bytes(file_name_pos, byteorder='little')
+        name_pos_int = byteToInt(file_name_pos)
         name_str = _read_name(bytes_data, name_pos_int+read_offset)
         string_list.append(name_str)
 
-        read_offset = pos * 2 + int.from_bytes(bytes_data[0x10:0x14], byteorder='little')
+        read_offset = pos * 2 + byteToInt(bytes_data[0x10:0x14])
         file_num_pos = bytes_data[read_offset: read_offset+2]
-        file_num_int = int.from_bytes(file_num_pos, byteorder='little')
+        file_num_int = byteToInt(file_num_pos)
         name_num_lst.append(file_num_int)
     return string_list
 
+
 def read_4_byte(bytes_: bytes, offset: int) -> bytes:
     return bytes_[offset:offset+4]
+
 
 def _read_name(data: bytes, offset: int) -> str:
     end_bytes = b'\x00'
@@ -42,10 +63,13 @@ def _read_name(data: bytes, offset: int) -> str:
     bytes_ = b''.join(str_buffer)
     return bytes_.decode(encoding='ascii')
 
+
 if __name__ == "__main__":
-    import sys, time
+    import sys
+    import time
     _awe_path = input('drag AWE file and press Enter :  ')
-    _hca_path = input('drag AWB extracted with "VGMToolbox" directory and press Enter :  ')
+    _hca_path = input(
+        'drag AWB extracted with "VGMToolbox" directory and press Enter :  ')
     print('-' * 20)
     _awe_path = _awe_path.strip('"')
     _hca_path = _hca_path.strip('"')
@@ -86,4 +110,3 @@ if __name__ == "__main__":
             # print('new path: ', new_path)
             os.rename(test_old_path, new_path)
             # os.system(f'D:\\download\\hca.exe "{new_path}"')
-
