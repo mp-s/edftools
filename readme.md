@@ -7,31 +7,33 @@
     - drag and drop to `.py` supported.  
     - run `.py` and drag input file supported.  
 - Command Prompt:
-    - using interpreter: `python <foo.py> [args]`
-    - using launcher: `py -3 <foo.py> [args]`
+    - using interpreter: `python mission_tools.py [args]`
+    - using launcher: `py -3 mission_tools.py [args]`
     ```
-    usage: *foo*.py [-h] [-d] [-t] [source_path] [destination_path]
+    usage: mission_tools.py [-h] [-d] [source_path] [destination_path]
 
-    positional arguments: *optional
-      source_path       input file path
-      destination_path  output file path
+    bvm/rmpa/json/asm converter
+
+    positional arguments:
+    source_path       input file path
+    destination_path  output file path
 
     optional arguments:
-      -h, --help        show this help message and exit
-      -d, --debug       enable debug mode
-      -t
+    -h, --help        show this help message and exit
+    -d, --debug       enable debug mode
     ```
-| Executable tool |
+| Single Executable tool |
 |------------------|
 | bvm_compiler.py   |
 | bvm_decompiler.py |
 | rmpa_parser.py    |
 | rmpa_builder.py   |
 
-- Dependent file
+- Dependency file
     bvm_model.py  
     common_utils.py  
     rmpa_config.py  
+    asm_more_readable.py  
 
 
 
@@ -41,12 +43,29 @@
         - *Recommended using sample-rmpa.json to generate*   
   
 ### Extra Tool:
-- AWE:
-    - using `VGMToolbox` AWB Archive extractor, get extracted directory
-    - then run `awe_parse.py`, follow the prompts.
+- AWE and AWB:
+    - If Windows has a Python interpreter associated with .py:  
+        - run `.py` and drag input file supported.  
+    - command prompt help:
+        ```
+        usage: awe_parser.py [-h] [--awe AWE] [--awb AWB] [--o O] [awe_path] [awb_path] [output_path]
+
+        edf's awe AND awb extractor
+
+        positional arguments:
+        awe_path     awe file path
+        awb_path     awb file path
+        output_path  output path (optional)
+
+        optional arguments:
+        -h, --help   show this help message and exit
+        --awe AWE    awe file path
+        --awb AWB    awb file path
+        --o O        output path (optional)
+        ```
 
 
-- RAB and MRAB ***extract only***:
+- RAB or MRAB ***extract only***:
     -   ```
         usage: rab_exract.py [-i INPUT] [source_path]
 
@@ -66,8 +85,7 @@
     - ``` edf41-coordinates-test-github-public.zip ```  
         - test Missions list Assisted by AUK233  
   
-- asm file more function comments:  
-    - `asm_more_readable.py foo.asm`  
+
 - more Documents in Documents/  
 
 - Only Chinese: _简易hex与浮点转换辅助_ &nbsp;:    

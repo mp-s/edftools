@@ -1,54 +1,175 @@
+import argparse
 import os
+import sys
+from pathlib import Path
+
+import common_utils as util
 
 string_list = []
 name_num_lst = []
 
+
+def show_exception_and_exit(exc_type, exc_value, tb):
+    import traceback
+    traceback.print_exception(exc_type, exc_value, tb)
+    input("\nPress Enter key to exit.")
+    sys.exit(-1)
+
+
+sys.excepthook = show_exception_and_exit
+
+
 class AWEParse:
-    pass
 
-class AWBParse:
-    pass
-
-class ExtractFileInfo:
     def __init__(self):
         super().__init__()
-        self.file_num = None
-        self.file_name = None
-        self.file_content_pos = None
+        self.list_length = None
+        self.name_table = {}
 
-def read(awb_path: str):
-    with open(file=awb_path, mode='rb') as f:
-        _data = f.read()
-    return _data
+    def read(self, path_str: str):
+        with open(path_str, 'rb') as f:
+            header_bytes = f.read(4)
+            verified_header = b'AWBE'
+            if header_bytes == verified_header:
+                self._byteorder = 'little'
+            elif header_bytes == verified_header[::-1]:
+                self._byteorder = 'big'
+            else:
+                print('file type error')
+                raise FileNotFoundError
+            if self._byteorder:
+                f.seek(0x08)
+                self.list_length = util.uint_from_4bytes(
+                    f.read(4), self._byteorder)
+                f.seek(0)
+                self.bytes_data = f.read()
+
+    def _uifb(self, position: int) -> int:
+        return util.uint_from_4bytes(
+            self.bytes_data[position:position+4], self._byteorder)
+
+    def parse(self):
+        # 输入 awe 读取文件数
+        str_ptr_lst_start = 0x0c
+        file_num_lst_start = 0x10
+
+        str_ptr_list_head_pos = self._uifb(str_ptr_lst_start)
+        file_num_list_head_pos = self._uifb(file_num_lst_start)
+        for index in range(self.list_length):
+            str_ptr_self_pos = index * 0x04 + str_ptr_list_head_pos
+            str_ofs = self._uifb(str_ptr_self_pos)
+            str_pos = str_ofs + str_ptr_self_pos
+            file_name = get_string(self.bytes_data, str_pos)
+
+            num_pos = index * 0x02 + file_num_list_head_pos
+            file_num_b = self.bytes_data[num_pos:num_pos+2]
+            file_num = int.from_bytes(file_num_b, byteorder=self._byteorder)
+            self.name_table[file_num] = file_name
 
 
-def byteToInt(bytes_: bytes) -> int:
-    return int.from_bytes(bytes_, byteorder='little')
+class AWBParse(util.LargeFileObject):
+
+    def __init__(self, file_path: str):
+        super().__init__(file_path)
+        self.list_length = None
+        # self.file_path = file_path
+        self.file_content_table = {}
+
+    def check(self):
+        header_bytes = self.file_mmap[0:4]
+        verified_header = b'AFS2'
+        if header_bytes == verified_header:
+            self._byteorder = 'little'
+        elif header_bytes == verified_header[::-1]:
+            self._byteorder = 'big'
+        else:
+            print('file type error')
+            raise FileNotFoundError
+
+        files_num_pos = 0x08
+        self.list_length = self._uint_from_position(files_num_pos)
+
+    def _uint_from_position(self, position: int) -> int:
+        _b = self.file_mmap[position:position+4]
+        return util.uint_from_4bytes(_b, self._byteorder)
+
+    def parse(self):
+        self.check()
+        flags_pos = 0x04
+        defined_padding_pos = 0x0c
+        file_num_blk_head_pos = 0x10
+
+        defined_padding = self._uint_from_position(defined_padding_pos)
+        file_content_blk_head_pos = file_num_blk_head_pos + self.list_length * 0x02
+        if self._uint_from_position(flags_pos) & 0x200:
+            _pos_bytes_len = 0x02
+        else:
+            _pos_bytes_len = 0x04
+        for index in range(self.list_length):
+            file_num_pos = index * 0x02 + file_num_blk_head_pos
+            file_num = int.from_bytes(
+                self.file_mmap[file_num_pos:file_num_pos+2], byteorder=self._byteorder)
+            content_start_pos = index * _pos_bytes_len + file_content_blk_head_pos
+            content_end_pos = content_start_pos + _pos_bytes_len
+            content_start_pos = self._uint_from_position(content_start_pos)
+            content_start_pos = padding_size(
+                content_start_pos, defined_padding)
+            content_end_pos = self._uint_from_position(content_end_pos)
+            self.file_content_table[file_num] = [
+                content_start_pos, content_end_pos]
+            pass
+        pass
 
 
-def parser_awe(bytes_data: bytes):
-    current_offset = 0x08
-    files_count_byte = bytes_data[current_offset:current_offset+4]
-    file_count = byteToInt(files_count_byte)
-    for pos in range(file_count):
-        read_offset = pos * 4 + 0x14
-        file_name_pos = bytes_data[read_offset:read_offset+4]
-        name_pos_int = byteToInt(file_name_pos)
-        name_str = _read_name(bytes_data, name_pos_int+read_offset)
-        string_list.append(name_str)
+# 输入 awe 读取文件数
+# 查找对应 awb 无则要求外部输入
+# 检查 awb 文件数是否与 awe 读取的一致
+# 开始操作
+# 获得文件编号
+# 获得文件名
+# 获得文件内容偏移
+# 批量写入文件
+def extract(awe_path, awb_path, extract_path: str = None):
+    awe_path = Path(awe_path)
+    awb_path = Path(awb_path)
+    if not awe_path.exists() or not awb_path.exists():
+        raise FileNotFoundError
 
-        read_offset = pos * 2 + byteToInt(bytes_data[0x10:0x14])
-        file_num_pos = bytes_data[read_offset: read_offset+2]
-        file_num_int = byteToInt(file_num_pos)
-        name_num_lst.append(file_num_int)
-    return string_list
+    if extract_path is not None:
+        output_dir = Path(extract_path)
+    else:
+        output_dir = Path(awe_path.with_suffix('.output'))
+
+    if output_dir.is_file():
+        raise FileExistsError
+    else:
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    awe = AWEParse()
+    awe.read(awe_path)
+    with AWBParse(awb_path) as awb:
+        awb.check()
+        if awe.list_length != awb.list_length:
+            print('awe or awb file wrong')
+            raise FileNotFoundError
+        awe.parse()
+        awb.parse()
+
+        for serial, file_name in awe.name_table.items():
+            output_path = output_dir / f'{file_name}.hca'
+            start_pos, end_pos = awb.file_content_table.get(serial)
+
+            with open(output_path, 'wb') as f_hca:
+                f_hca.write(awb.file_mmap[start_pos:end_pos])
 
 
-def read_4_byte(bytes_: bytes, offset: int) -> bytes:
-    return bytes_[offset:offset+4]
+def padding_size(original_size: int, padding: int) -> int:
+    _mod = original_size % padding
+    _pad = padding - _mod
+    return original_size + _pad
 
 
-def _read_name(data: bytes, offset: int) -> str:
+def get_string(data: bytes, offset: int) -> str:
     end_bytes = b'\x00'
     str_buffer = []
     name_byte = b''
@@ -64,49 +185,63 @@ def _read_name(data: bytes, offset: int) -> str:
     return bytes_.decode(encoding='ascii')
 
 
-if __name__ == "__main__":
-    import sys
-    import time
-    _awe_path = input('drag AWE file and press Enter :  ')
-    _hca_path = input(
-        'drag AWB extracted with "VGMToolbox" directory and press Enter :  ')
+def parse_args():
+    description = "edf's awe AND awb extractor"
+    parse = argparse.ArgumentParser(description=description)
+
+    help_awe = 'awe file path'
+    parse.add_argument('awe_path', help=help_awe, nargs='?')
+    help_awb = 'awb file path'
+    parse.add_argument('awb_path', help=help_awb, nargs='?')
+    help_out = 'output path (optional)'
+    parse.add_argument('output_path', help=help_out, nargs='?')
+
+    parse.add_argument('--awe', help=help_awe)
+    parse.add_argument('--awb', help=help_awb)
+    parse.add_argument('--o', help=help_out)
+
+    return parse.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    if args.awe_path is None and args.awe is None:
+        _awe_path = input('drag AWE file here and press Enter :  ')
+        _awe_path = Path(_awe_path.strip('"'))
+    elif args.awe_path:
+        _awe_path = Path(args.awe_path)
+    elif args.awe:
+        _awe_path = Path(args.awe)
+
+    if args.awb_path is None and args.awb is None:
+        _awb_path = input('drag AWB file here and press Enter :  ')
+        _awb_path = Path(_awb_path.strip('"'))
+    elif args.awb_path:
+        _awb_path = Path(args.awb_path)
+    elif args.awb:
+        _awb_path = Path(args.awb)
+
+    if args.output_path is None and args.o is None:
+        _output_dir = input(
+            '\n----!Optional----\n drag output directory here and Press Enter, \n or just Press Enter.\n')
+        _output_dir = _output_dir.strip('"')
+    elif args.output_path:
+        _output_dir = Path(args.output_path)
+    elif args.o:
+        _output_dir = Path(args.o)
+    else:
+        _output_dir = None
+
+    if _output_dir:
+        _output_dir = Path(_output_dir)
+    else:
+        _output_dir = None
+
     print('-' * 20)
-    _awe_path = _awe_path.strip('"')
-    _hca_path = _hca_path.strip('"')
-    print('source .AWE check : ', _awe_path)
-    print('extracted path check : ', _hca_path)
-    print('wait 4 seconds...')
-    time.sleep(4)
 
-    parser_awe(read(_awe_path))
-    file_name_tbl = dict(zip(name_num_lst, string_list))
+    extract(_awe_path, _awb_path, _output_dir)
 
-    path_lst = []
-    placeholder_set = set()
-    for root, dirs, files in os.walk(_hca_path):
-        for file_name in files:
-            _l = file_name.split('.')
-            serial = _l.pop(-2)
-            path_lst.append(serial)
-            placeholder_set.add('.'.join(_l))
-    print(f'file path num: {len(path_lst)} \n string list: {len(string_list)}')
-    if len(path_lst) != len(string_list) and len(placeholder_set) != 1:
-        print('文件夹内文件数量不匹配! 即将退出')
-        time.sleep(5)
-        sys.exit()
-    placeholder = placeholder_set.pop()
-    placeholder = placeholder.split('.')
-    for _i, file_serial in enumerate(file_name_tbl):
-        zero_str = '%05d' % file_serial
-        _ll = placeholder[:]
-        _ll.insert(-1, zero_str)
-        test_old_filename = '.'.join(_ll)
-        test_old_path = os.path.join(_hca_path, test_old_filename)
-        _exist = os.path.exists(test_old_path)
-        print('exists?', _exist, '\told path:', test_old_path)
-        if _exist:
-            new_name = file_name_tbl.get(file_serial) + '.hca'
-            new_path = os.path.join(_hca_path, new_name)
-            # print('new path: ', new_path)
-            os.rename(test_old_path, new_path)
-            # os.system(f'D:\\download\\hca.exe "{new_path}"')
+
+if __name__ == "__main__":
+    main()

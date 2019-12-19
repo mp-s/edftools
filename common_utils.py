@@ -1,4 +1,6 @@
+import mmap
 import struct
+from pathlib import Path
 
 
 def int_from_4bytes(bytes_: bytes, byteorder: str) -> int:
@@ -38,8 +40,10 @@ def float_from_4bytes(bytes_: bytes, byteorder: str) -> float:
 def int_to_4bytes(number: int, byteorder: str) -> bytes:
     return number.to_bytes(4, byteorder=byteorder, signed=True)
 
+
 def uint_to_4bytes(number: int, byteorder: str) -> bytes:
     return number.to_bytes(4, byteorder=byteorder)
+
 
 def float_to_4bytes(number: float, byteorder: str) -> bytes:
     if byteorder == 'little':
@@ -75,3 +79,25 @@ def get_string(origin_data: bytes,
         offset += 2
     bytes_ = b''.join(str_buffer)
     return bytes_.decode(encoding=encoding)
+
+
+class LargeFileObject:
+    def __init__(self, file_path: Path):
+        super().__init__()
+        self._file_path = Path(file_path)
+
+    def __enter__(self):
+        '''
+        @summary: 使用with语句是调用，会话管理器在代码块开始前调用，返回值与as后的参数绑定
+        '''
+        self.__fp = self._file_path.open('rb')
+        self.file_mmap = mmap.mmap(
+            self.__fp.fileno(), 0, access=mmap.ACCESS_READ)
+        return self
+
+    def __exit__(self, type_, value, traceback):
+        '''
+        @summary: 会话管理器在代码块执行完成好后调用（不同于__del__）(必须是4个参数)
+        '''
+        self.file_mmap.close()
+        self.__fp.close()
