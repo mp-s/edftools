@@ -155,18 +155,27 @@ def extract(awe_path, awb_path, extract_path: str = None):
         awe.parse()
         awb.parse()
 
+        progress_count = 0
+        print('total: ', awe.list_length)
+        
         for serial, file_name in awe.name_table.items():
             output_path = output_dir / f'{file_name}.hca'
             start_pos, end_pos = awb.file_content_table.get(serial)
+
+            if progress_count % (awe.list_length // 10) == 0:
+                print(progress_count, '...')
+            progress_count += 1
 
             with open(output_path, 'wb') as f_hca:
                 f_hca.write(awb.file_mmap[start_pos:end_pos])
 
 
 def padding_size(original_size: int, padding: int) -> int:
-    _mod = original_size % padding
-    _pad = padding - _mod
-    return original_size + _pad
+    _integer = original_size // padding
+    if _integer == original_size / padding:
+        return original_size
+    else:
+        return (_integer + 1) * padding
 
 
 def get_string(data: bytes, offset: int) -> str:
@@ -198,7 +207,7 @@ def parse_args():
 
     parse.add_argument('--awe', help=help_awe)
     parse.add_argument('--awb', help=help_awb)
-    parse.add_argument('--o', help=help_out)
+    parse.add_argument('-o', '--output', help=help_out)
 
     return parse.parse_args()
 
@@ -222,14 +231,14 @@ def main():
     elif args.awb:
         _awb_path = Path(args.awb)
 
-    if args.output_path is None and args.o is None:
+    if args.output_path is None and args.output is None:
         _output_dir = input(
             '\n----!Optional----\n drag output directory here and Press Enter, \n or just Press Enter.\n')
         _output_dir = _output_dir.strip('"')
     elif args.output_path:
         _output_dir = Path(args.output_path)
-    elif args.o:
-        _output_dir = Path(args.o)
+    elif args.output:
+        _output_dir = Path(args.output)
     else:
         _output_dir = None
 
