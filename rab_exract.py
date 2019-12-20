@@ -62,13 +62,13 @@ class RABExtract:
 
     def read_dir_id(self):
         start_pos = self._dir_name_pos_lst_blk_start_pos
-        self.dir_lst_name = []
+        self.dir_name_tbl = {}
         for index in range(self._dir_count):
             c_pos = start_pos + index * 0x04
             str_pos = util_read_4bytes_to_int(
                 self._file_mmap, c_pos, byteorder=self._byteorder)
-            self.dir_lst_name.append(self._get_string(str_pos, index=c_pos))
-        self.dir_lst_name
+            self.dir_name_tbl[index] = self._get_string(str_pos, index=c_pos)
+        self.dir_name_tbl
 
     def extract(self, output_path_dir: Path = None):
         if output_path_dir == None:
@@ -81,7 +81,16 @@ class RABExtract:
             e_filename = file_info_item.file_name
             e_contentpos = file_info_item.content_start_pos
             e_contentsize = file_info_item.file_size
-            o_path = output_path_dir / e_filename
+            
+            parent_path = file_info_item.root_dirs_identifer
+            parent_path = parent_path[::-1]
+            if parent_path[0] == parent_path[1] == 0:
+                p_path = self.dir_name_tbl.get(parent_path[0])
+            else:
+                p_path = '/'.join(map(self.dir_name_tbl.get, parent_path))
+            p_path = output_path_dir / p_path
+            Path(p_path).mkdir(parents=True, exist_ok=True)
+            o_path = p_path/ e_filename
             if o_path.exists():
                 continue
             with open(o_path, 'wb') as f:
