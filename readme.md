@@ -2,48 +2,54 @@
 
 ## Required: Python 3.6+
 
-### Usage: ##   
-- If Windows has a Python interpreter associated with .py:
-    - drag and drop to `.py` supported.  
-    - run `.py` and drag input file supported.  
-- Command Prompt:
-    - using interpreter: `python mission_tools.py [args]`
-    - using launcher: `py -3 mission_tools.py [args]`
-    ```
-    usage: mission_tools.py [-h] [-d] [source_path] [destination_path]
+## Usage: ##   
 
-    bvm/rmpa/json/asm converter
+### Mission Tools:  
+Two methods:  
+###### Using exe file: [release](https://github.com/mp-s/edftools/releases/latest)
+###### Using mission_tools.py file
+- If Windows has a Python interpreter associated with `.py`, you can:
+    - drag and drop to `mission_tools.py`  
+    - run `mission_tools.py` and drag input file.  
+- Command Prompt:  
+    - using interpreter: `python mission_tools.py [args]`  
+    - using launcher: `py -3 mission_tools.py [args]`  
+    - help message:  
+        ```
+        usage: mission_tools.py [-h] [-d] [source_path] [destination_path]
 
-    positional arguments:
-    source_path       input file path
-    destination_path  output file path
+        bvm/rmpa/json/asm converter
 
-    optional arguments:
-    -h, --help        show this help message and exit
-    -d, --debug       enable debug mode
-    ```
-| Single Executable tool |
-|------------------|
-| bvm_compiler.py   |
-| bvm_decompiler.py |
-| rmpa_parser.py    |
-| rmpa_builder.py   |
+        positional arguments:
+        source_path       input file path
+        destination_path  output file path
 
-- Dependency file
-    bvm_model.py  
-    common_utils.py  
-    rmpa_config.py  
-    asm_more_readable.py  
+        optional arguments:
+        -h, --help        show this help message and exit
+        -d, --debug       enable debug mode
+        ```
+- Single Executable tool :
 
+    - bvm_compiler.py    
+    - bvm_decompiler.py  
+    - rmpa_parser.py     
+    - rmpa_builder.py    
 
-
+- Dependency file  
+    - bvm_model.py  
+    - common_utils.py  
+    - rmpa_config.py  
+    - asm_more_readable.py  
+  
+  
+  
 - ***About RMPA_builder:***  
         - *supported:`"route type"`  ` "shape type"`  ` "spawnpoint type"`   
         - *camera type in json will ignore*  
         - *Recommended using sample-rmpa.json to generate*   
   
 ### Extra Tool:
-- AWE and AWB:
+- .AWE and .AWB file:
     - If Windows has a Python interpreter associated with .py:  
         - run `.py` and drag input file supported.  
     - command prompt help:
@@ -65,7 +71,7 @@
         ```
 
 
-- RAB or MRAB ***extract only***:
+- .RAB or .MRAB file ***extract only***:
     -   ```
         usage: rab_exract.py [-i INPUT] [source_path]
 
@@ -91,7 +97,7 @@
 - Only Chinese: _简易hex与浮点转换辅助_ &nbsp;:    
     _双击打开 `simple_ieee754_float_convert.py`_  
 
-## Thanks
+## Thanks to
 * [EDF's Discord Channel](https://discord.gg/bfGjgTM) #edf-modding community
     * [@KittopiaCreator's project](https://gitlab.com/kittopiacreator/edf-tools)  
     * [@Zeddy's project](https://github.com/zeddidragon/sgott)
