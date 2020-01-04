@@ -81,7 +81,7 @@ class RABExtract:
             e_filename = file_info_item.file_name
             e_contentpos = file_info_item.content_start_pos
             e_contentsize = file_info_item.file_size
-            
+
             parent_path = file_info_item.root_dirs_identifer
             parent_path = parent_path[::-1]
             if parent_path[0] == parent_path[1] == 0:
@@ -90,7 +90,7 @@ class RABExtract:
                 p_path = '/'.join(map(self.dir_name_tbl.get, parent_path))
             p_path = output_path_dir / p_path
             Path(p_path).mkdir(parents=True, exist_ok=True)
-            o_path = p_path/ e_filename
+            o_path = p_path / e_filename
             if o_path.exists():
                 continue
             with open(o_path, 'wb') as f:
@@ -167,7 +167,6 @@ def run_main():
     elif args.input:
         source_path = Path(args.input)
 
-
     with RABExtract(source_path) as rab:
         rab.read_header()
         rab.read_file_info()
@@ -184,6 +183,7 @@ def run_test():
         rabObj.read_dir_id()
         rabObj.extract()
 
+
 def parse_args():
     description = 'RAB Extractor'
     parse = argparse.ArgumentParser(description=description)
@@ -196,6 +196,7 @@ def parse_args():
     parse.add_argument('-t', '--test', action='store_true')
 
     return parse.parse_args()
+
 
 if __name__ == "__main__":
     run_main()

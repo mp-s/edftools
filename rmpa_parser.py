@@ -2,6 +2,7 @@ import argparse
 import base64
 import struct
 from pathlib import Path
+import json
 
 import common_utils as util
 from rmpa_config import *
@@ -203,11 +204,10 @@ class RMPAParse:
             return None
 
     def generate_json(self, output_path: Path):
-        import json
-        # print(_struct)
         self._read_struct()
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(self._struct, f, ensure_ascii=False, indent=2)
+            f.write(mmJSONEncoder().encode(self._struct))
+            # json.dump(self._struct, f,cls=mmJSONEncoder)  # using cls.iterencode()
 
     def get_all_string(self):
         position_spawnpoint_header = self._get_4bytes_to_uint(0x24)
@@ -264,6 +264,49 @@ class RmpaHeader:
             RmpaConfig.type_camera: (self.pos_camera, self.flag_camera),
             RmpaConfig.type_spawnpoint: (self.pos_spawnpoint, self.flag_spawnpoint),
         }
+
+
+class mmJSONEncoder(json.JSONEncoder):
+    def __init__(self, *args, **kwargs):
+        self.ensure_ascii = False
+        self.indent = 2
+        super().__init__(ensure_ascii=self.ensure_ascii, indent=self.indent, *args, **kwargs)
+        self.current_indent = 0
+        self.current_indent_str = ""
+
+    def encode(self, o):
+        # Special Processing for lists
+        if isinstance(o, (list, tuple)):
+            primitives_only = True
+            for item in o:
+                if isinstance(item, (list, tuple, dict)):
+                    primitives_only = False
+                    break
+            output = []
+            if primitives_only:
+                for item in o:
+                    output.append(json.dumps(item))
+                return "[ " + ", ".join(output) + " ]"
+            else:
+                self.current_indent += self.indent
+                self.current_indent_str = " " * self.current_indent
+                for item in o:
+                    output.append(self.current_indent_str + self.encode(item))
+                self.current_indent -= self.indent
+                self.current_indent_str = " " * self.current_indent
+                return "[\n" + ",\n".join(output) + "\n" + self.current_indent_str + "]"
+        elif isinstance(o, dict):
+            output = []
+            self.current_indent += self.indent
+            self.current_indent_str = " " * self.current_indent
+            for key, value in o.items():
+                output.append(self.current_indent_str +
+                              json.dumps(key) + ": " + self.encode(value))
+            self.current_indent -= self.indent
+            self.current_indent_str = " " * self.current_indent
+            return "{\n" + ",\n".join(output) + "\n" + self.current_indent_str + "}"
+        else:
+            return json.dumps(o, ensure_ascii=self.ensure_ascii)
 
 
 def run_main():
