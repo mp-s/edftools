@@ -2,7 +2,6 @@ import argparse
 import mmap
 from pathlib import Path
 
-
 class RABExtract:
     def __init__(self, file_path: Path):
         super().__init__()
@@ -170,8 +169,10 @@ def run_main():
     with RABExtract(source_path) as rab:
         rab.read_header()
         rab.read_file_info()
-        rab.read_dir_id()
-        rab.extract()
+        for obj in rab.file_info_list:
+            print(obj.root_dirs_identifer)
+        # rab.read_dir_id()
+        # rab.extract()
 
 
 def run_test():

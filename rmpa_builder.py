@@ -198,6 +198,8 @@ class RMPAGenerate:
 
 
 class RMPAJsonPreprocess:
+    ''' predict rmpa file size '''
+
     def __init__(self, json_dict, debug_flag: bool = False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._json_dict = json_dict
@@ -220,14 +222,17 @@ class RMPAJsonPreprocess:
 
     @property
     def name_abs_pos(self):
+        ''' string position '''
         return self.__name_abs_pos.get
 
     def name_bytes(self) -> bytes:
+        ''' generate name bytes block '''
         if len(self.name_byte_list) == 0:
             self._read_node(self._json_dict)
         return b''.join(self.name_byte_list)
 
     def _name_tbl_start_pos_predict(self) -> int:
+        ''' name bytes block start position '''
         _1_rmpa_header = 0x30
 
         self.route_block_size = self.type_block_size_predict(
@@ -243,6 +248,7 @@ class RMPAJsonPreprocess:
         return abs_pos_start
 
     def type_block_size_predict(self, type_name) -> int:
+        ''' Single type size '''
         type_sub_groups_count_list = self.base_data_count_table.get(type_name)
         if type_sub_groups_count_list is None:
             return 0
@@ -265,6 +271,7 @@ class RMPAJsonPreprocess:
         return type_block_size
 
     def _waypoint_extra_blk_propress(self, base_data_list: list):
+        ''' waypoint type has extra block, predict block size '''
         for route_item in base_data_list:
             next_list = route_item.get(RmpaConfig.route_next_block, list())
             extra_sgo = route_item.get(RmpaConfig.waypoint_width)
@@ -278,11 +285,13 @@ class RMPAJsonPreprocess:
             self._route_extra_data_size_list.append(extra_size)
 
     def _str_tbl_with_abs_pos(self) -> dict:
+        ''' relative -> absolute '''
         append_pos = self._name_tbl_start_pos_predict()
         d_ = {k: v+append_pos for k, v in self._name_str_tbl.items()}
         return d_
 
     def _read_node(self, dict_: dict):
+        ''' traversing json '''
         key_list = [
             RmpaConfig.base_name,
             RmpaConfig.shape_type_name,

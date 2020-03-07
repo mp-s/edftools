@@ -14,10 +14,10 @@ class RMPAParse:
         super().__init__(*args, **kwargs)
         self._debug_flag = debug_flag
 
-    def _read_type_header(self, type_pos, type_name):
+    def _read_type_header(self, self_pos, type_name):
+        ''' read type header and get type block content '''
         type_head_size = 0x20
-        self_pos = type_pos
-        bytes_ = self._get_content_bytes(type_pos, size=type_head_size)
+        bytes_ = self._get_content_bytes(self_pos, size=type_head_size)
 
         def byte_uint(pos: int) -> int:
             return util.uint_from_4bytes(
@@ -48,6 +48,7 @@ class RMPAParse:
         return type_header_dict
 
     def _read_sub_header(self, sub_header_pos, type_name):
+        ''' read sub-enum header and get base data block content '''
         sub_header_size = 0x20
         self_pos = sub_header_pos
         bytes_ = self._get_content_bytes(sub_header_pos, size=sub_header_size)
@@ -77,6 +78,7 @@ class RMPAParse:
         for idx in range(base_data_num):
             data_size = _base_data_size.get(type_name)
             base_data_current_pos = idx * data_size + base_data_block_start_pos + self_pos
+            # get type function
             _fn = base_type_dict.get(type_name, str)
             _base_list.append(_fn(base_data_current_pos))
         ld = {
@@ -89,6 +91,7 @@ class RMPAParse:
         return ld
 
     def _read_spawnpoint(self, spawnpoint_def_pos):
+        ''' get spawnpoint blocks and parse to dict. '''
         sp_size = 0x40
         self_pos = spawnpoint_def_pos
         bytes_ = self._get_content_bytes(spawnpoint_def_pos, size=sp_size)
@@ -101,6 +104,7 @@ class RMPAParse:
         return _ld
 
     def _read_waypoint(self, route_def_pos):
+        ''' get waypoint blocks and parse to dict. '''
         wp_size = 0x3C
         self_pos = route_def_pos
         bytes_ = self._get_content_bytes(route_def_pos, size=wp_size)
@@ -130,6 +134,7 @@ class RMPAParse:
         return _ddd
 
     def _read_shape(self, shape_pos):
+        ''' get shape blocks and parse to dict. '''
         shape_set_size = 0x30
         self_pos = shape_pos
         bytes_ = self._get_content_bytes(self_pos, size=shape_set_size)
@@ -148,6 +153,7 @@ class RMPAParse:
         return _ldd
 
     def _read_struct(self):
+        ''' parse rmpa file '''
         header_data = self._origin_data[0:0x30]
         h = RmpaHeader(self._byteorder)
         h.parse_block(header_data)
@@ -188,6 +194,7 @@ class RMPAParse:
         return _data_r
 
     def read(self, file_path):
+        ''' read file to buffer '''
         with open(file=file_path, mode='rb') as f:
             self._origin_data = f.read()
         _file_header = self._origin_data[0:4]
@@ -210,6 +217,8 @@ class RMPAParse:
             # json.dump(self._struct, f,cls=mmJSONEncoder)  # using cls.iterencode()
 
     def get_all_string(self):
+        '''debug test
+        '''
         position_spawnpoint_header = self._get_4bytes_to_uint(0x24)
         _type_bytes = self._get_content_bytes(
             position_spawnpoint_header, size=0x20)
@@ -239,6 +248,8 @@ class RMPAParse:
 
 
 class RmpaHeader:
+    ''' parse rmpa file header '''
+
     def __init__(self, byteorder: str):
         super().__init__()
         self._byteorder = byteorder
@@ -267,6 +278,8 @@ class RmpaHeader:
 
 
 class mmJSONEncoder(json.JSONEncoder):
+    ''' custom JSON indent '''
+
     def __init__(self, *args, **kwargs):
         self.ensure_ascii = False
         self.indent = 2

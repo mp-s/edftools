@@ -28,6 +28,7 @@ class AWEParse:
 
     def read(self, path_str: str):
         with open(path_str, 'rb') as f:
+            # read header
             header_bytes = f.read(4)
             verified_header = b'AWBE'
             if header_bytes == verified_header:
@@ -37,6 +38,8 @@ class AWEParse:
             else:
                 print('file type error')
                 raise FileNotFoundError
+
+            # awe content
             if self._byteorder:
                 f.seek(0x08)
                 self.list_length = util.uint_from_4bytes(
@@ -55,6 +58,8 @@ class AWEParse:
 
         str_ptr_list_head_pos = self._uifb(str_ptr_lst_start)
         file_num_list_head_pos = self._uifb(file_num_lst_start)
+
+        # get {serial: fileName, ...}
         for index in range(self.list_length):
             str_ptr_self_pos = index * 0x04 + str_ptr_list_head_pos
             str_ofs = self._uifb(str_ptr_self_pos)
@@ -76,6 +81,7 @@ class AWBParse(util.LargeFileObject):
         self.file_content_table = {}
 
     def check(self):
+        # check file header
         header_bytes = self.file_mmap[0:4]
         verified_header = b'AFS2'
         if header_bytes == verified_header:
@@ -129,7 +135,7 @@ class AWBParse(util.LargeFileObject):
 # 获得文件名
 # 获得文件内容偏移
 # 批量写入文件
-def extract(awe_path, awb_path, extract_path: str = None):
+def extract(awe_path: str, awb_path: str, extract_path: str = None):
     awe_path = Path(awe_path)
     awb_path = Path(awb_path)
     if not awe_path.exists() or not awb_path.exists():
@@ -157,7 +163,7 @@ def extract(awe_path, awb_path, extract_path: str = None):
 
         progress_count = 0
         print('total: ', awe.list_length)
-        
+
         for serial, file_name in awe.name_table.items():
             output_path = output_dir / f'{file_name}.hca'
             start_pos, end_pos = awb.file_content_table.get(serial)

@@ -17,6 +17,7 @@ class BvmData:
         self._asm_lines = {}
 
     def read(self, file_path: str):
+        ''' read header '''
         with open(file_path, 'rb') as f:
             self.data = f.read()
         if (self.data[0:4] == b'BVM '):
@@ -25,9 +26,7 @@ class BvmData:
         else:
             self._byteorder = 'big'
             self._encoding = 'utf-16be'
-        self._read_header()
 
-    def _read_header(self):
         def get_btoi(offset: int) -> int:
             return util.uint_from_4bytes(
                 util.get_4bytes(self.data, offset), self._byteorder)
@@ -43,6 +42,7 @@ class BvmData:
         self._index_class = get_btoi(0x3c)
 
     def get_global_var_name(self):
+        ''' Global variable name list '''
         size = self._count_ptr_list * 4
         offset2 = self._index_ptr_list + size
         ptr_data = self._get_content_with_ofs(self._index_ptr_list, offset2)
@@ -53,6 +53,7 @@ class BvmData:
             self._global_vars[index] = str_
 
     def get_func_name(self):
+        ''' Function name '''
         size = self._count_ptr2_list * 0x10
         ptr2_data = self._get_content_with_size(self._index_ptr2_list, size)
         assert len(ptr2_data) == size
@@ -93,17 +94,20 @@ class BvmData:
                     func_name, f'block ptr:{jmp_mark_index}, className_index:{arg_index}, global stores count: {arg_count}')
 
     def get_constructor(self):
+        ''' Constructor function block '''
         _construct_chunk = self._get_content_with_ofs(
             self._index_constructor, self._index_asm)
         self.__asm_decompiler(_construct_chunk, self._construct_lines)
         pass
 
     def asm_decompiler(self):
+        ''' major bytecode block '''
         _asm_chunk = self._get_content_with_ofs(
             self._index_asm, self._index_str)
         self.__asm_decompiler(_asm_chunk, self._asm_lines)
 
     def __asm_decompiler(self, chunk: bytes, buffer_dict: dict) -> dict:
+        ''' bytecode to assembly code '''
         offset = 0
         operands_use_uint = ['cuscall', 'cuscall0',
                              'cuscall1', 'cuscall2', 'cuscall3']
@@ -177,6 +181,7 @@ class BvmData:
         return buffer_dict
 
     def output_data(self) -> str:
+        ''' convert to target string '''
         self.get_global_var_name()  # 全局变量名字
         self.get_func_name()        # 带名字函数
         self.get_constructor()      # 构造函数
@@ -197,7 +202,7 @@ class BvmData:
                 left_str = '  '.join(values[0:3])
                 comment_str = '  '.join(values[3:])
                 out_buffer.append(f'{left_str}    // {comment_str}')
-        # assemble
+        # assembly code
         for key, values in self._asm_lines.items():
             jump_mark_str = self._asm_jmp_mark.get(key, None)
             if jump_mark_str:
