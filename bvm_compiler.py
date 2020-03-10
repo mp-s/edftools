@@ -125,8 +125,8 @@ class BVMGenerate(object):
         str_list = []
         for line in self._asm_data:
             if 'pushstr' in line:
-                line_group = line.split()
-                str_ = line_group[-1].strip('\"')
+                str_ = line.split('pushstr')[-1]
+                str_ = str_.strip()[1:-1]
                 if str_ not in str_list:
                     str_list.append(str_)
 
