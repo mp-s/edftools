@@ -3,7 +3,7 @@ import argparse
 import struct
 from pathlib import Path
 
-import bvm_model as mdl
+from . import bvm_model as mdl
 
 
 class BVMGenerate(object):

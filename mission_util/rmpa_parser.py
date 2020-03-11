@@ -4,8 +4,8 @@ import struct
 from pathlib import Path
 import json
 
-import common_utils as util
-from rmpa_config import *
+from . import util
+from .rmpa_config import *
 
 
 class RMPAParse:

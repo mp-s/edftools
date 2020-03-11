@@ -1,5 +1,5 @@
 #! python3
-import common_utils as util
+from . import util
 
 
 class RmpaConfig:

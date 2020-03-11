@@ -3,7 +3,7 @@ import json
 import struct
 from pathlib import Path
 
-from rmpa_config import *
+from .rmpa_config import *
 
 
 class RMPAGenerate:

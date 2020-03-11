@@ -2,10 +2,10 @@ import argparse
 import sys
 from pathlib import Path
 
-from bvm_compiler import BVMGenerate
-from bvm_decompiler import BvmData
-from rmpa_builder import RMPAGenerate
-from rmpa_parser import RMPAParse
+from mission_util.bvm_compiler import BVMGenerate
+from mission_util.bvm_decompiler import BvmData
+from mission_util.rmpa_builder import RMPAGenerate
+from mission_util.rmpa_parser import RMPAParse
 
 BvmData.build_file = BvmData.output_file
 RMPAGenerate.build_file = RMPAGenerate.generate_rmpa

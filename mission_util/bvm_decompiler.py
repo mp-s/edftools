@@ -2,8 +2,8 @@ import argparse
 import struct
 from pathlib import Path
 
-import bvm_model as mdl
-import common_utils as util
+from . import bvm_model as mdl
+from . import util
 
 
 class BvmData:
@@ -224,7 +224,7 @@ class BvmData:
             else:
                 out_buffer.append('  '.join(values))
         try:
-            import asm_more_readable
+            from . import asm_more_readable
         except ImportError as e:
             print(e)
         else:
