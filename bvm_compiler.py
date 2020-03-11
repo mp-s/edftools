@@ -147,9 +147,13 @@ class BVMGenerate(object):
                              'cuscall3', 'loadabs', 'storeabs']  # unsigned int
 
         def _c_operand(line: str):
-            _group = line.split()
+            _group = line.split()   # 'pushstr "FOG 300"'  glitch
             if len(_group) == 2:    # 'location_xxx  :' glitch
                 _opcode, _operand = _group
+            elif len(_group) and _group[0] == 'pushstr':
+                _opcode = 'pushstr'
+                _ = line.split('pushstr')[-1]
+                _operand = _.strip()
             else:   # no operand
                 return [line.strip()]
 
