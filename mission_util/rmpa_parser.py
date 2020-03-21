@@ -213,7 +213,7 @@ class RMPAParse:
             input()
             return None
 
-    def generate_json(self, output_path: Path):
+    def output_file(self, output_path: Path):
         self._read_struct()
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(mmJSONEncoder().encode(self._struct))

@@ -164,7 +164,7 @@ class RMPAGenerate:
         _2 = b''.join(_extra_one_data_list)
         return _1 + _2
 
-    def generate_rmpa(self, file_path: Path):
+    def output_file(self, file_path: Path):
 
         some_bytes = b''
         some_flags = []

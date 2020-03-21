@@ -7,10 +7,6 @@ from mission_util.bvm_decompiler import BvmData
 from mission_util.rmpa_builder import RMPAGenerate
 from mission_util.rmpa_parser import RMPAParse
 
-BvmData.build_file = BvmData.output_file
-RMPAGenerate.build_file = RMPAGenerate.generate_rmpa
-RMPAParse.build_file = RMPAParse.generate_json
-
 
 def show_exception_and_exit(exc_type, exc_value, tb):
     import traceback
@@ -77,8 +73,17 @@ def main():
     print('working...')
     obj = _obj_class(args.debug)
     obj.read(source_path)
-    obj.build_file(output_path)
+    obj.output_file(output_path)
     print('done!')
+
+
+def get_file_type(path: Path):
+    header_types = {b'BVM ': '.bvm', b'\x00PMR': '.rmpa'}
+    with open(path, mode='rb') as f:
+        header = f.read(4)
+        src_type = header_types.get(header, header_types.get(header[::-1]))
+
+    return src_type
 
 
 if __name__ == "__main__":
