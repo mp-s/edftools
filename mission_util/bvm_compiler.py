@@ -61,9 +61,17 @@ class BVMGenerate(object):
         self._trimed_data = _trimed_data[line_offset:]
 
     def _compile_global_variables(self):
-        ''' 编译全局变量, 初始化变量的编译 '''
-        flag_global_vars = True
-        flag_constructor = False
+        ''' 编译全局变量, 初始化变量的编译 
+        
+        需要修改, name 可在任意地方调用.
+        预想:
+        寻找name + 寻找构造函数 + 寻找 pushstr
+        name 转存后要去除 (会动 list 结构)
+        构造函数需要开关 (:: 和下方相邻的 exit)
+        pushstr 转存 string 内容和位置表
+        '''
+        flag_global_vars = True     # 全局变量名字
+        flag_constructor = False    # 全局变量初始化(构造函数)
         _global_var_list = []  # 纯名字 还需要生成一个地址表, 匹配打平后的数据
         self._gbl_var_rel_pos_list = []  # 地址表, 可统计长度, 可输出完成格式
         self._constructor_bytecode_list = []
@@ -72,6 +80,7 @@ class BVMGenerate(object):
         # define global var, assign value
         for index, line in enumerate(self._trimed_data):
 
+            # 构造函数块完成
             if 'exit' in line:    # first exit break
                 self._constructor_bytecode_list.append(b'\x30')
                 flag_constructor = False
@@ -79,7 +88,9 @@ class BVMGenerate(object):
                 self._global_var_bytes_list = _global_var_list
                 break
 
+            # name 表处理
             if flag_global_vars:
+                # 列完 name
                 if 'name' not in line:
                     flag_global_vars = False
                 else:
@@ -90,6 +101,8 @@ class BVMGenerate(object):
                     self._gbl_var_rel_pos_list.append(_gbl_var_rel_pos)
                     _gbl_var_rel_pos += len(global_var_byte)
                     continue
+
+            # 构造函数处理
             elif flag_constructor:
                 _l = line.split()
                 if len(_l) == 1:
@@ -115,31 +128,36 @@ class BVMGenerate(object):
                     line_bytecode = mdl.compiler_bytecode(opcode, operand)
                 self._constructor_bytecode_list.append(line_bytecode)
 
+            # 识别构造函数开始
             if '::' in line:
                 self._class_name, func_name = line[:-1].split('::')
                 if self._class_name in func_name:  # Mission::Mission:
                     flag_constructor = True
 
     def _compile_str(self):
-        ''' 提取字符串 合块 获得位置 应用入代码区 '''
+        '''
+        提取pushstr内的字符串 合块 获得位置 应用入代码区
+
+        pushstr opcode parse
+        '''
         str_list = []
         for line in self._asm_data:
             if 'pushstr' in line:
-                str_ = line.split('pushstr')[-1]
-                str_ = str_.strip()[1:-1]
+                _ = line.split('pushstr')[-1]
+                str_ = _.strip()[1:-1]
                 if str_ not in str_list:
                     str_list.append(str_)
 
-        bytes_str_tbl_1 = []    # generate string bytes
+        self._str_tbl_bytes_list = []    # generate string bytes
         current_str_offest = 0
         self._str_pos_table = {}
         for str_ in str_list:
             self._str_pos_table[str_] = current_str_offest
             _compiled_byte = str_.encode(encoding='utf-16le') + bytes(2)
             current_str_offest += len(_compiled_byte)   # next str position
-            bytes_str_tbl_1.append(_compiled_byte)
+            self._str_tbl_bytes_list.append(_compiled_byte)
 
-        self._str_tbl_bytes_list = bytes_str_tbl_1
+
 
     def _compile_operand(self):
         ''' 编译操作数为 bytes, 为下一步编译jmp获取长度用'''
@@ -151,31 +169,33 @@ class BVMGenerate(object):
             if len(_group) == 2:    # 'location_xxx  :' glitch
                 _opcode, _operand = _group
             elif len(_group) and _group[0] == 'pushstr':
+                # 为了修复 pushstr "FOG 300" 问题, 另立条件
                 _opcode = 'pushstr'
                 _ = line.split('pushstr')[-1]
                 _operand = _.strip()
-            else:   # no operand
+            else:   # no operand 或者多个 operand
                 return [line.strip()]
 
+            # 这步 必有 opcode operand 两组
             if 'pushstr' == _opcode:   # pushstr     "some_string"
                 _str = _operand.strip('"')
                 _str_pos = self._str_pos_table.get(_str)  # int
                 length = 4 if _str_pos >> 16 else (2 if _str_pos >> 8 else 1)
                 _compiled_byte = _str_pos.to_bytes(length, byteorder='little')
                 # pushstr     (int)    --(0xHHHHHHHH)--
-                return [_opcode, _compiled_byte]
+                
 
             elif _operand[0:2].lower() == '0x':  # 0xhh
                 _hex_str = _operand[2:]
                 if len(_hex_str) & 0x1 != 0:
                     _hex_str = f'0{_hex_str}'   # 定长
                 _compiled_byte = bytes.fromhex(_hex_str)[::-1]
-                return [_opcode, _compiled_byte]
+                
 
             elif _opcode == 'push' and _operand[-1] == 'f':
                 float_ = float(_operand[:-1])
                 _compiled_byte = struct.pack('<f', float_)
-                return [_opcode, _compiled_byte]
+                
 
             elif _opcode == 'push':
                 int_ = int(_operand)
@@ -185,17 +205,18 @@ class BVMGenerate(object):
                     length = 2
                 _compiled_byte = int_.to_bytes(
                     length, byteorder='little', signed=True)
-                return [_opcode, _compiled_byte]
+                
 
             elif _opcode in operands_use_uint:
                 int_ = int(_operand)
                 length = 4 if int_ >> 16 else (2 if int_ >> 8 else 1)
                 _compiled_byte = int_.to_bytes(
                     length, byteorder='little')   # 不定长
-                return [_opcode, _compiled_byte]
 
             else:
                 return [line]
+
+            return [_opcode, _compiled_byte]
 
         self._asm_data = list(map(_c_operand, self._asm_data))
 
