@@ -1,4 +1,4 @@
-import argparse
+#! python3
 import json
 import struct
 from pathlib import Path
@@ -7,7 +7,6 @@ from .rmpa_config import *
 
 
 class RMPAGenerate:
-
     def __init__(self, debug_flag: bool = False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._debug_flag = debug_flag
@@ -35,7 +34,7 @@ class RMPAGenerate:
 
         sub_groups_header_bytes_list = []
         sub_group_datas_bytes_list = []
-        sub_groups_abs_start_pos = type_group_header_abs_position + 0x20      # 多type时非固定
+        sub_groups_abs_start_pos = type_group_header_abs_position + 0x20  # 多type时非固定
         base_data_latest_padding_size = 0
         for index, sub_group_item in enumerate(sub_groups):
             # self._build_sub_header()
@@ -54,15 +53,13 @@ class RMPAGenerate:
 
             self_data_blk_pos = remain_sub_groups_size + base_data_latest_padding_size
 
-            sub_groups_header_bytes_list.append(
-                b''.join([
-                    b'\x00\x01',
-                    bytes(0x12),
-                    int_to_4bytes(_2_name_pos_int),
-                    int_to_4bytes(base_item_count),
-                    int_to_4bytes(self_data_blk_pos),
-                ])
-            )
+            sub_groups_header_bytes_list.append(b''.join([
+                b'\x00\x01',
+                bytes(0x12),
+                int_to_4bytes(_2_name_pos_int),
+                int_to_4bytes(base_item_count),
+                int_to_4bytes(self_data_blk_pos),
+            ]))
 
             base_data_abs_start_pos = self_head_abs_pos + self_data_blk_pos
             _b = self._build_sub_group_base_block_data(
@@ -75,18 +72,19 @@ class RMPAGenerate:
         _xx.extend(sub_group_datas_bytes_list)
         return b''.join(_xx)
 
-    def _build_type_header_block(
-            self,
-            type_str_name: str,
-            sub_dict_length: int,
-            type_header_abs_pos: int) -> bytes:
+    def _build_type_header_block(self, type_str_name: str,
+                                 sub_dict_length: int,
+                                 type_header_abs_pos: int) -> bytes:
         _bytes_0x00 = int_to_4bytes(sub_dict_length)
-        _type_name_abs_pos = self.pre.name_abs_pos(
-            type_str_name, type_header_abs_pos)
+        _type_name_abs_pos = self.pre.name_abs_pos(type_str_name,
+                                                   type_header_abs_pos)
         _bytes_0x18 = int_to_4bytes(_type_name_abs_pos - type_header_abs_pos)
         block_bytes = b''.join([
-            _bytes_0x00, int_to_4bytes(0x20), bytes(8),
-            bytes(8), _bytes_0x18, bytes(4)
+            _bytes_0x00,
+            int_to_4bytes(0x20),
+            bytes(8),
+            bytes(8), _bytes_0x18,
+            bytes(4)
         ])
         return block_bytes
 
@@ -99,14 +97,16 @@ class RMPAGenerate:
             size += self.pre.type_block_size_predict(_t_name)
         return size + file_header_size
 
-    def _build_spawnpoint_block(self, base_dict: dict, abs_pos_start: int) -> bytes:
+    def _build_spawnpoint_block(self, base_dict: dict,
+                                abs_pos_start: int) -> bytes:
         sp = TypeSpawnPoint(self._byteorder)
         sp.from_dict(base_dict)
-        sp.name_in_rmpa_pos = self.pre.name_abs_pos(
-            sp.name) - abs_pos_start
+        sp.name_in_rmpa_pos = self.pre.name_abs_pos(sp.name) - abs_pos_start
         return sp.to_bytes_block()
 
-    def _build_sub_group_base_block_data(self, type_name: str, group_start_pos: int, base_data_list: list) -> bytes:
+    def _build_sub_group_base_block_data(self, type_name: str,
+                                         group_start_pos: int,
+                                         base_data_list: list) -> bytes:
 
         _main_group_data_list = []
         _extra_one_data_list = []
@@ -114,7 +114,8 @@ class RMPAGenerate:
             for index, base_data_table in enumerate(base_data_list):
                 block_start_pos = group_start_pos + 0x40 * index
                 _main_group_data_list.append(
-                    self._build_spawnpoint_block(base_data_table, block_start_pos))
+                    self._build_spawnpoint_block(base_data_table,
+                                                 block_start_pos))
 
         elif type_name == RmpaConfig.type_shape:
             shape_size_start_pos = 0x30 * len(base_data_list)
@@ -123,12 +124,12 @@ class RMPAGenerate:
                 shape = TypeShape(self._byteorder)
                 shape.from_dict(base_data_table)
                 # shape name
-                _name_rel_pos = self.pre.name_abs_pos(
-                    shape.name, 0) - block_start_pos
+                _name_rel_pos = self.pre.name_abs_pos(shape.name,
+                                                      0) - block_start_pos
                 shape.name_in_rmpa_pos = _name_rel_pos
                 # shape type name
-                _type_rel_pos = self.pre.name_abs_pos(
-                    shape.shape_type, 0) - block_start_pos
+                _type_rel_pos = self.pre.name_abs_pos(shape.shape_type,
+                                                      0) - block_start_pos
                 shape.shape_type_in_rmpa_pos = _type_rel_pos
                 # shape size data position
                 shape.size_data_in_rmpa_pos = shape_size_start_pos + 0x10 * index
@@ -185,7 +186,10 @@ class RMPAGenerate:
             some_header_start_pos += len(block_bytes)
         _byte_rmpa_header = b'\0PMR\0\0\0\1'
         header_info_list = []
-        def ui_b(_n): return util.uint_to_4bytes(_n, self._byteorder)
+
+        def ui_b(_n):
+            return util.uint_to_4bytes(_n, self._byteorder)
+
         for _flag, _pos in zip(some_flags, some_header_pos):
             header_info_list.append(ui_b(_flag) + ui_b(_pos))
 
@@ -199,7 +203,6 @@ class RMPAGenerate:
 
 class RMPAJsonPreprocess:
     ''' predict rmpa file size '''
-
     def __init__(self, json_dict, debug_flag: bool = False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._json_dict = json_dict
@@ -287,7 +290,7 @@ class RMPAJsonPreprocess:
     def _str_tbl_with_abs_pos(self) -> dict:
         ''' relative -> absolute '''
         append_pos = self._name_tbl_start_pos_predict()
-        d_ = {k: v+append_pos for k, v in self._name_str_tbl.items()}
+        d_ = {k: v + append_pos for k, v in self._name_str_tbl.items()}
         return d_
 
     def _read_node(self, dict_: dict):
@@ -345,44 +348,7 @@ def float_to_4bytes(number: float) -> bytes:
     return struct.pack('>f', number)
 
 
-def main():
-    args = parse_args()
-
-    if args.source_path is None:
-        str_ = input('drag file here and press Enter: ')
-        source_path = Path(str_.strip('"'))
-    else:
-        source_path = Path(args.source_path)
-
-    if args.destination_path:
-        output_path = Path(args.destination_path)
-    else:
-        output_path = source_path.with_suffix('.rmpa')
-
-    if '.json' == source_path.suffix.lower():
-        print('working..')
-        a = RMPAGenerate(args.debug)
-        a.read(source_path)
-        a.generate_rmpa(output_path)
-        print('done!')
-
-
-def parse_args():
-    description = 'rmpa file builder'
-    parse = argparse.ArgumentParser(description=description)
-
-    help_ = 'input json file path'
-    parse.add_argument('source_path', help=help_, nargs='?')
-    help_ = 'output rmpa file path'
-    parse.add_argument('destination_path', help=help_, nargs='?')
-
-    help_ = 'enable debug mode'
-    parse.add_argument('-d', '--debug', help=help_,
-                       action='store_true', default=False)
-    parse.add_argument('-t', action='store_true')
-
-    return parse.parse_args()
-
-
 if __name__ == "__main__":
-    main()
+    from time import sleep
+    print('none')
+    sleep(4)

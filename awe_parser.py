@@ -20,7 +20,6 @@ sys.excepthook = show_exception_and_exit
 
 
 class AWEParse:
-
     def __init__(self):
         super().__init__()
         self.list_length = None
@@ -48,8 +47,8 @@ class AWEParse:
                 self.bytes_data = f.read()
 
     def _uifb(self, position: int) -> int:
-        return util.uint_from_4bytes(
-            self.bytes_data[position:position+4], self._byteorder)
+        return util.uint_from_4bytes(self.bytes_data[position:position + 4],
+                                     self._byteorder)
 
     def parse(self):
         # 输入 awe 读取文件数
@@ -67,13 +66,12 @@ class AWEParse:
             file_name = get_string(self.bytes_data, str_pos)
 
             num_pos = index * 0x02 + file_num_list_head_pos
-            file_num_b = self.bytes_data[num_pos:num_pos+2]
+            file_num_b = self.bytes_data[num_pos:num_pos + 2]
             file_num = int.from_bytes(file_num_b, byteorder=self._byteorder)
             self.name_table[file_num] = file_name
 
 
 class AWBParse(util.LargeFileObject):
-
     def __init__(self, file_path: str):
         super().__init__(file_path)
         self.list_length = None
@@ -96,7 +94,7 @@ class AWBParse(util.LargeFileObject):
         self.list_length = self._uint_from_position(files_num_pos)
 
     def _uint_from_position(self, position: int) -> int:
-        _b = self.file_mmap[position:position+4]
+        _b = self.file_mmap[position:position + 4]
         return util.uint_from_4bytes(_b, self._byteorder)
 
     def parse(self):
@@ -114,15 +112,17 @@ class AWBParse(util.LargeFileObject):
         for index in range(self.list_length):
             file_num_pos = index * 0x02 + file_num_blk_head_pos
             file_num = int.from_bytes(
-                self.file_mmap[file_num_pos:file_num_pos+2], byteorder=self._byteorder)
+                self.file_mmap[file_num_pos:file_num_pos + 2],
+                byteorder=self._byteorder)
             content_start_pos = index * _pos_bytes_len + file_content_blk_head_pos
             content_end_pos = content_start_pos + _pos_bytes_len
             content_start_pos = self._uint_from_position(content_start_pos)
-            content_start_pos = padding_size(
-                content_start_pos, defined_padding)
+            content_start_pos = padding_size(content_start_pos,
+                                             defined_padding)
             content_end_pos = self._uint_from_position(content_end_pos)
             self.file_content_table[file_num] = [
-                content_start_pos, content_end_pos]
+                content_start_pos, content_end_pos
+            ]
             pass
         pass
 
@@ -189,8 +189,8 @@ def get_string(data: bytes, offset: int) -> str:
     str_buffer = []
     name_byte = b''
 
-    while(end_bytes != name_byte):
-        name_byte = data[offset:offset+1]
+    while (end_bytes != name_byte):
+        name_byte = data[offset:offset + 1]
         if end_bytes == name_byte:
             break
         str_buffer.append(name_byte)
@@ -239,7 +239,8 @@ def main():
 
     if args.output_path is None and args.output is None:
         _output_dir = input(
-            '\n----!Optional----\n drag output directory here and Press Enter, \n or just Press Enter.\n')
+            '\n----!Optional----\n drag output directory here and Press Enter, \n or just Press Enter.\n'
+        )
         _output_dir = _output_dir.strip('"')
     elif args.output_path:
         _output_dir = Path(args.output_path)

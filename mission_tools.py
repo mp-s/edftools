@@ -32,8 +32,11 @@ def parse_args():
     parse.add_argument('destination_path', help=help_, nargs='?')
 
     help_ = 'enable debug mode'
-    parse.add_argument('-d', '--debug', help=help_,
-                       action='store_true', default=False)
+    parse.add_argument('-d',
+                       '--debug',
+                       help=help_,
+                       action='store_true',
+                       default=False)
     # parse.add_argument('-t', action='store_true')
 
     return parse.parse_args()
@@ -60,12 +63,12 @@ def main():
     if args.destination_path:
         output_path = Path(args.destination_path)
     else:
-        output_path = source_path.with_suffix(dest_type_tbl.get(src_suffix, ''))
+        output_path = source_path.with_suffix(dest_type_tbl.get(
+            src_suffix, ''))
 
     src_type_tbl = {
         '.bvm': BvmData,
         '.asm': BVMGenerate,
-
         '.rmpa': RMPAParse,
         '.json': RMPAGenerate,
     }

@@ -53,14 +53,16 @@ def float_to_4bytes(number: float, byteorder: str) -> bytes:
     return struct.pack(fmt, number)
 
 
-def split_content_with_size(content: bytes, start: int, size: int = 0) -> bytes:
+def split_content_with_size(content: bytes,
+                            start: int,
+                            size: int = 0) -> bytes:
     if size == 0:
         return bytes()
-    return content[start:start+size]
+    return content[start:start + size]
 
 
 def get_4bytes(content: bytes, pos: int) -> bytes:
-    return content[pos:pos+4]
+    return content[pos:pos + 4]
 
 
 def get_string(origin_data: bytes,
@@ -71,8 +73,8 @@ def get_string(origin_data: bytes,
     str_buffer = []
     utf16_byte = b''
     offset = offset + index
-    while(end_bytes != utf16_byte):
-        utf16_byte = origin_data[offset:offset+2]
+    while (end_bytes != utf16_byte):
+        utf16_byte = origin_data[offset:offset + 2]
         if end_bytes == utf16_byte:
             break
         str_buffer.append(utf16_byte)
@@ -91,8 +93,9 @@ class LargeFileObject:
         @summary: 使用with语句是调用，会话管理器在代码块开始前调用，返回值与as后的参数绑定
         '''
         self.__fp = self._file_path.open('rb')
-        self.file_mmap = mmap.mmap(
-            self.__fp.fileno(), 0, access=mmap.ACCESS_READ)
+        self.file_mmap = mmap.mmap(self.__fp.fileno(),
+                                   0,
+                                   access=mmap.ACCESS_READ)
         return self
 
     def __exit__(self, type_, value, traceback):
