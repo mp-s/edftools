@@ -38,6 +38,21 @@ def parse_args():
     return parse.parse_args()
 
 
+dest_type_tbl = {
+    '.bvm': '.asm',
+    '.asm': '.bvm',
+    '.rmpa': '.json',
+    '.json': '.rmpa',
+}
+
+src_type_tbl = {
+    '.bvm': BvmData,
+    '.asm': BVMGenerate,
+    '.rmpa': RMPAParse,
+    '.json': RMPAGenerate,
+}
+
+
 def main():
     args = parse_args()
 
@@ -47,13 +62,6 @@ def main():
     else:
         source_path = Path(args.source_path)
 
-    dest_type_tbl = {
-        '.bvm': '.asm',
-        '.asm': '.bvm',
-        '.rmpa': '.json',
-        '.json': '.rmpa',
-    }
-
     src_suffix = source_path.suffix.lower()
 
     if args.destination_path:
@@ -62,16 +70,12 @@ def main():
         output_path = source_path.with_suffix(dest_type_tbl.get(
             src_suffix, ''))
 
-    src_type_tbl = {
-        '.bvm': BvmData,
-        '.asm': BVMGenerate,
-        '.rmpa': RMPAParse,
-        '.json': RMPAGenerate,
-    }
+    convert(src_suffix, source_path, output_path, debug=args.debug)
 
+def convert(src_suffix: str, source_path, output_path, debug=False):
     _obj_class = src_type_tbl.get(src_suffix)
     print('working...')
-    obj = _obj_class(args.debug)
+    obj = _obj_class(debug)
     obj.read(source_path)
     obj.output_file(output_path)
     print('done!')
