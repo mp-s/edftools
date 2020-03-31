@@ -72,7 +72,7 @@ class BVMGenerate(object):
         # define global var, assign value
         for index, line in enumerate(self._trimed_data):
 
-            if 'exit' in line:    # first exit break
+            if 'exit' == line.strip():    # first exit break
                 self._constructor_bytecode_list.append(b'\x30')
                 flag_constructor = False
                 self._asm_data = self._trimed_data[index+1:]
