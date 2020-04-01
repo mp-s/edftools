@@ -1,4 +1,4 @@
-import argparse
+#! python3
 import struct
 from pathlib import Path
 
@@ -7,7 +7,6 @@ from . import util
 
 
 class BvmData:
-
     def __init__(self, debug_flag: bool = False):
         self._debug_mode = debug_flag
 
@@ -28,9 +27,10 @@ class BvmData:
             self._encoding = 'utf-16be'
 
         def get_btoi(offset: int) -> int:
-            return util.uint_from_4bytes(
-                util.get_4bytes(self.data, offset), self._byteorder)
+            return util.uint_from_4bytes(util.get_4bytes(self.data, offset),
+                                         self._byteorder)
             # return self._get_int(self.data[offset:offset+4])
+
         # self.size = self.get_offset(offset_list['data_align_index'])
         self._index_ptr_list = get_btoi(0x1c)
         self._count_ptr_list = get_btoi(0x18)
@@ -47,7 +47,7 @@ class BvmData:
         offset2 = self._index_ptr_list + size
         ptr_data = self._get_content_with_ofs(self._index_ptr_list, offset2)
         assert len(ptr_data) == size
-        ptr_list = [ptr_data[i:i+4] for i in range(0, size, 4)]
+        ptr_list = [ptr_data[i:i + 4] for i in range(0, size, 4)]
         for index, str_index in enumerate(ptr_list):
             str_ = self._get_string(str_index)
             self._global_vars[index] = str_
@@ -58,9 +58,9 @@ class BvmData:
         ptr2_data = self._get_content_with_size(self._index_ptr2_list, size)
         assert len(ptr2_data) == size
 
-        ptr2_list = [ptr2_data[i:i+0x10] for i in range(0, size, 0x10)]
+        ptr2_list = [ptr2_data[i:i + 0x10] for i in range(0, size, 0x10)]
         for ptr2_chunk in ptr2_list:
-            _lst = [ptr2_chunk[i:i+4] for i in range(0, 0x10, 0x04)]
+            _lst = [ptr2_chunk[i:i + 4] for i in range(0, 0x10, 0x04)]
             jmp_mark_index, _fn_name_pos, arg_index, arg_count_store = _lst
             jmp_mark_index = self._get_int(jmp_mark_index)
             func_name = self._get_string(_fn_name_pos)
@@ -91,30 +91,33 @@ class BvmData:
             self._asm_jmp_mark[jmp_mark_index] = return_string
             if self._debug_mode:
                 print(
-                    func_name, f'block ptr:{jmp_mark_index}, className_index:{arg_index}, global stores count: {arg_count}')
+                    func_name,
+                    f'block ptr:{jmp_mark_index}, className_index:{arg_index}, global stores count: {arg_count}'
+                )
 
     def get_constructor(self):
         ''' Constructor function block '''
-        _construct_chunk = self._get_content_with_ofs(
-            self._index_constructor, self._index_asm)
+        _construct_chunk = self._get_content_with_ofs(self._index_constructor,
+                                                      self._index_asm)
         self.__asm_decompiler(_construct_chunk, self._construct_lines)
         pass
 
     def asm_decompiler(self):
         ''' major bytecode block '''
-        _asm_chunk = self._get_content_with_ofs(
-            self._index_asm, self._index_str)
+        _asm_chunk = self._get_content_with_ofs(self._index_asm,
+                                                self._index_str)
         self.__asm_decompiler(_asm_chunk, self._asm_lines)
 
     def __asm_decompiler(self, chunk: bytes, buffer_dict: dict) -> dict:
         ''' bytecode to assembly code '''
         offset = 0
-        operands_use_uint = ['cuscall', 'cuscall0',
-                             'cuscall1', 'cuscall2', 'cuscall3']
+        operands_use_uint = [
+            'cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3'
+        ]
         operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
 
-        while(offset < len(chunk)):
-            opcode = chunk[offset:offset+1]
+        while (offset < len(chunk)):
+            opcode = chunk[offset:offset + 1]
             _opcode_offset = offset
             offset += 1
             ukn_opcode = (f'-UNKNOWN-: {opcode.hex()}', 0)
@@ -122,14 +125,14 @@ class BvmData:
             buffer = [opcode.hex(), opcode_asm]
 
             if operand_len == 0:
-                if opcode_asm == 'pushstr':    # "pushstr 0"
+                if opcode_asm == 'pushstr':  # "pushstr 0"
                     _ = self._get_string(bytes(0), self._index_str)
                     buffer.append(f'\"{_}\"')
                 elif opcode == b'\x15' or 'cuscall' in opcode_asm:
                     buffer.append('0')
                 elif opcode == b'\x33':
                     buffer.append('1')
-                elif 'abs' in opcode_asm:   # "**abs 0"
+                elif 'abs' in opcode_asm:  # "**abs 0"
                     buffer.append('0')
                     buffer.append(self._global_vars.get(0))
                 elif 'rel' in opcode_asm:
@@ -137,18 +140,18 @@ class BvmData:
                 else:
                     pass
             else:
-                operand = chunk[offset:offset+operand_len]
+                operand = chunk[offset:offset + operand_len]
                 comments = None
 
                 if (4 == operand_len and opcode_asm != 'pushstr'
-                        and opcode_asm not in operands_use_uint
-                        and opcode_asm not in operands_use_offset):  # all floats
+                        and opcode_asm not in operands_use_uint and
+                        opcode_asm not in operands_use_offset):  # all floats
                     operand_str = self._convert_operand(operand, 4)
                 elif opcode_asm == 'push':  # all numbers
                     operand_str = self._convert_operand(operand, operand_len)
-                elif opcode_asm == 'pushstr':   # all bytes offset
+                elif opcode_asm == 'pushstr':  # all bytes offset
                     operand_str = f'\"{self._get_string(operand, self._index_str)}\"'
-                elif opcode_asm in operands_use_uint:    # all int
+                elif opcode_asm in operands_use_uint:  # all int
                     operand_str = str(self._get_int(operand))
                     # 添加注释
                     if opcode_asm == 'cuscall0':
@@ -183,9 +186,9 @@ class BvmData:
     def output_data(self) -> str:
         ''' convert to target string '''
         self.get_global_var_name()  # 全局变量名字
-        self.get_func_name()        # 带名字函数
-        self.get_constructor()      # 构造函数
-        self.asm_decompiler()       # 字节码区反编译
+        self.get_func_name()  # 带名字函数
+        self.get_constructor()  # 构造函数
+        self.asm_decompiler()  # 字节码区反编译
         out_buffer = []
         # global vars
         for index, var_name in self._global_vars.items():
@@ -216,11 +219,13 @@ class BvmData:
                     f'{values[0]}  {values[1]}{space_placeholder}{values[2]}')
             elif len(values) == 4:
                 out_buffer.append(
-                    f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {values[3]}')
+                    f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {values[3]}'
+                )
             elif len(values) > 4:
                 comment_str = '  '.join(values[3:])
                 out_buffer.append(
-                    f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {comment_str}')
+                    f'{values[0]}  {values[1]}{space_placeholder}{values[2]}    // {comment_str}'
+                )
             else:
                 out_buffer.append('  '.join(values))
         try:
@@ -239,7 +244,7 @@ class BvmData:
         '''debug test'''
         def _get_offset(offset_name: str) -> int:
             offset = mdl.offset_list.get(offset_name)
-            return self._get_int(self.data[offset:offset+4])
+            return self._get_int(self.data[offset:offset + 4])
 
         index = _get_offset('string_chunk_index')
         size = _get_offset('class_name_index')
@@ -248,9 +253,9 @@ class BvmData:
         str_list = []
         utf16_byte = b''
         offset = index
-        while(offset < size):
-            while(end_bytes != utf16_byte):
-                utf16_byte = self.data[offset:offset+2]
+        while (offset < size):
+            while (end_bytes != utf16_byte):
+                utf16_byte = self.data[offset:offset + 2]
                 str_buffer.append(utf16_byte)
                 offset += 2
             bytes_ = b''.join(str_buffer)
@@ -267,16 +272,14 @@ class BvmData:
         '''
         signed-int or float
         '''
-
         def get_unpack_type(length: int) -> str:
             if self._byteorder == 'little':
                 p1 = '<'
             else:
                 p1 = '>'
-            p2 = {1: 'b',
-                  2: 'h',
-                  4: 'f'}
+            p2 = {1: 'b', 2: 'h', 4: 'f'}
             return p1 + p2.get(length)
+
         unpack_type = get_unpack_type(bytes_length)
         str_ = str(struct.unpack(unpack_type, bytes_)[0])
         if bytes_length == 4:
@@ -289,8 +292,8 @@ class BvmData:
         utf16_byte = b''
         offset = self._get_int(offset) + index
 
-        while(end_bytes != utf16_byte):
-            utf16_byte = self.data[offset:offset+2]
+        while (end_bytes != utf16_byte):
+            utf16_byte = self.data[offset:offset + 2]
             if end_bytes == utf16_byte:
                 break
             str_buffer.append(utf16_byte)
@@ -305,51 +308,15 @@ class BvmData:
         return data
 
     def _get_content_with_size(self, offset: int, size: int = 0) -> bytes:
-        data = self.data[offset:offset+size]
+        data = self.data[offset:offset + size]
         return data
 
     def _get_int(self, byte_: bytes, signed_=False) -> int:
         return int.from_bytes(byte_, byteorder=self._byteorder, signed=signed_)
 
 
-def run_main():
-    args = parse_args()
-
-    if args.source_path is None:
-        str_ = input('drag file here and press Enter: ')
-        source_path = Path(str_.strip('"'))
-    else:
-        source_path = Path(args.source_path)
-
-    if args.destination_path:
-        output_path = Path(args.destination_path)
-    else:
-        output_path = source_path.with_suffix('.asm')
-
-    if '.bvm' == source_path.suffix.lower():
-        print('working...')
-        bvm_ = BvmData(debug_flag=args.debug)
-        bvm_.read(source_path)
-        bvm_.output_file(output_path)
-        print('done!')
-
-
-def parse_args():
-    description = 'bvm file decompiler'
-    parse = argparse.ArgumentParser(description=description)
-
-    help_ = 'input bvm file path'
-    parse.add_argument('source_path', help=help_, nargs='?')
-    help_ = 'output asm file path'
-    parse.add_argument('destination_path', help=help_, nargs='?')
-
-    help_ = 'enable debug mode'
-    parse.add_argument('-d', '--debug', help=help_,
-                       action='store_true', default=False)
-    parse.add_argument('-t', action='store_true')
-
-    return parse.parse_args()
-
 
 if __name__ == "__main__":
-    run_main()
+    from time import sleep
+    print('none')
+    sleep(4)

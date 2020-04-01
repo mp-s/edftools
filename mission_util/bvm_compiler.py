@@ -1,5 +1,5 @@
 #! python3
-import argparse
+
 import struct
 from pathlib import Path
 
@@ -7,7 +7,6 @@ from . import bvm_model as mdl
 
 
 class BVMGenerate(object):
-
     def __init__(self, debug_flag: bool = False):
         # self._trimed_data = None
         self._debug_flag = debug_flag
@@ -39,18 +38,20 @@ class BVMGenerate(object):
                 # ['float', ' float', ' int', ' float']
                 func_arg_list = func_arg_o_str[:-1].split(',')
                 func_args_num = 0 if '' == func_arg_list[0] else len(
-                    func_arg_list)              # 4
+                    func_arg_list)  # 4
                 _trimed_fn_name = func_line[:-1]
                 self._named_fn_accept_num[_trimed_fn_name] = func_args_num
                 self._named_fn_arg_types_dict[_trimed_fn_name] = [
                     mdl.func_arg_type_byte.get(_.strip())
                     for _ in func_arg_list
-                ]                               # [b'\x02', b'\x02', b'\x01', b'\x02']
-                self._named_fn_ret_type_bytes[_trimed_fn_name] = mdl.func_arg_type_byte.get(
-                    func_ret_type)
+                ]  # [b'\x02', b'\x02', b'\x01', b'\x02']
+                self._named_fn_ret_type_bytes[
+                    _trimed_fn_name] = mdl.func_arg_type_byte.get(
+                        func_ret_type)
                 return func_line
             else:
                 return line.rstrip()
+
         _trimed_data = list(map(trim_line_comment, _data))
         line_offset = 0
         # triming file header empty line
@@ -61,9 +62,17 @@ class BVMGenerate(object):
         self._trimed_data = _trimed_data[line_offset:]
 
     def _compile_global_variables(self):
-        ''' 编译全局变量, 初始化变量的编译 '''
-        flag_global_vars = True
-        flag_constructor = False
+        ''' 编译全局变量, 初始化变量的编译 
+        
+        需要修改, name 可在任意地方调用.
+        预想:
+        寻找name + 寻找构造函数 + 寻找 pushstr
+        name 转存后要去除 (会动 list 结构)
+        构造函数需要开关 (:: 和下方相邻的 exit)
+        pushstr 转存 string 内容和位置表
+        '''
+        flag_global_vars = True  # 全局变量名字
+        flag_constructor = False  # 全局变量初始化(构造函数)
         _global_var_list = []  # 纯名字 还需要生成一个地址表, 匹配打平后的数据
         self._gbl_var_rel_pos_list = []  # 地址表, 可统计长度, 可输出完成格式
         self._constructor_bytecode_list = []
@@ -72,14 +81,17 @@ class BVMGenerate(object):
         # define global var, assign value
         for index, line in enumerate(self._trimed_data):
 
+            # 构造函数块完成
             if 'exit' == line.strip():    # first exit break
                 self._constructor_bytecode_list.append(b'\x30')
                 flag_constructor = False
-                self._asm_data = self._trimed_data[index+1:]
+                self._asm_data = self._trimed_data[index + 1:]
                 self._global_var_bytes_list = _global_var_list
                 break
 
+            # name 表处理
             if flag_global_vars:
+                # 列完 name
                 if 'name' not in line:
                     flag_global_vars = False
                 else:
@@ -90,6 +102,8 @@ class BVMGenerate(object):
                     self._gbl_var_rel_pos_list.append(_gbl_var_rel_pos)
                     _gbl_var_rel_pos += len(global_var_byte)
                     continue
+
+            # 构造函数处理
             elif flag_constructor:
                 _l = line.split()
                 if len(_l) == 1:
@@ -107,75 +121,81 @@ class BVMGenerate(object):
                             operand = struct.pack('<f', operand_float)
                         else:
                             operand_int = int(operand)
-                            operand = operand_int.to_bytes(
-                                1, byteorder='little', signed=True)
+                            operand = operand_int.to_bytes(1,
+                                                           byteorder='little',
+                                                           signed=True)
                     else:
                         operand_int = int(operand)
                         operand = operand_int.to_bytes(1, byteorder='little')
                     line_bytecode = mdl.compiler_bytecode(opcode, operand)
                 self._constructor_bytecode_list.append(line_bytecode)
 
+            # 识别构造函数开始
             if '::' in line:
                 self._class_name, func_name = line[:-1].split('::')
                 if self._class_name in func_name:  # Mission::Mission:
                     flag_constructor = True
 
     def _compile_str(self):
-        ''' 提取字符串 合块 获得位置 应用入代码区 '''
+        '''
+        提取pushstr内的字符串 合块 获得位置 应用入代码区
+
+        pushstr opcode parse
+        '''
         str_list = []
         for line in self._asm_data:
             if 'pushstr' in line:
-                str_ = line.split('pushstr')[-1]
-                str_ = str_.strip()[1:-1]
+                _ = line.split('pushstr')[-1]
+                str_ = _.strip()[1:-1]
                 if str_ not in str_list:
                     str_list.append(str_)
 
-        bytes_str_tbl_1 = []    # generate string bytes
+        self._str_tbl_bytes_list = []  # generate string bytes
         current_str_offest = 0
         self._str_pos_table = {}
         for str_ in str_list:
             self._str_pos_table[str_] = current_str_offest
             _compiled_byte = str_.encode(encoding='utf-16le') + bytes(2)
-            current_str_offest += len(_compiled_byte)   # next str position
-            bytes_str_tbl_1.append(_compiled_byte)
+            current_str_offest += len(_compiled_byte)  # next str position
+            self._str_tbl_bytes_list.append(_compiled_byte)
 
-        self._str_tbl_bytes_list = bytes_str_tbl_1
 
     def _compile_operand(self):
         ''' 编译操作数为 bytes, 为下一步编译jmp获取长度用'''
-        operands_use_uint = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2',
-                             'cuscall3', 'loadabs', 'storeabs']  # unsigned int
+        operands_use_uint = [
+            'cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3',
+            'loadabs', 'storeabs'
+        ]  # unsigned int
 
         def _c_operand(line: str):
-            _group = line.split()   # 'pushstr "FOG 300"'  glitch
-            if len(_group) == 2:    # 'location_xxx  :' glitch
+            _group = line.split()  # 'pushstr "FOG 300"'  glitch
+            if len(_group) == 2:  # 'location_xxx  :' glitch
                 _opcode, _operand = _group
             elif len(_group) and _group[0] == 'pushstr':
+                # 为了修复 pushstr "FOG 300" 问题, 另立条件
                 _opcode = 'pushstr'
                 _ = line.split('pushstr')[-1]
                 _operand = _.strip()
-            else:   # no operand
+            else:  # no operand 或者多个 operand
                 return [line.strip()]
 
-            if 'pushstr' == _opcode:   # pushstr     "some_string"
+            # 这步 必有 opcode operand 两组
+            if 'pushstr' == _opcode:  # pushstr     "some_string"
                 _str = _operand.strip('"')
                 _str_pos = self._str_pos_table.get(_str)  # int
                 length = 4 if _str_pos >> 16 else (2 if _str_pos >> 8 else 1)
                 _compiled_byte = _str_pos.to_bytes(length, byteorder='little')
                 # pushstr     (int)    --(0xHHHHHHHH)--
-                return [_opcode, _compiled_byte]
 
             elif _operand[0:2].lower() == '0x':  # 0xhh
                 _hex_str = _operand[2:]
                 if len(_hex_str) & 0x1 != 0:
-                    _hex_str = f'0{_hex_str}'   # 定长
+                    _hex_str = f'0{_hex_str}'  # 定长
                 _compiled_byte = bytes.fromhex(_hex_str)[::-1]
-                return [_opcode, _compiled_byte]
 
             elif _opcode == 'push' and _operand[-1] == 'f':
                 float_ = float(_operand[:-1])
                 _compiled_byte = struct.pack('<f', float_)
-                return [_opcode, _compiled_byte]
 
             elif _opcode == 'push':
                 int_ = int(_operand)
@@ -183,19 +203,20 @@ class BVMGenerate(object):
                     length = 1
                 else:
                     length = 2
-                _compiled_byte = int_.to_bytes(
-                    length, byteorder='little', signed=True)
-                return [_opcode, _compiled_byte]
+                _compiled_byte = int_.to_bytes(length,
+                                               byteorder='little',
+                                               signed=True)
 
             elif _opcode in operands_use_uint:
                 int_ = int(_operand)
                 length = 4 if int_ >> 16 else (2 if int_ >> 8 else 1)
-                _compiled_byte = int_.to_bytes(
-                    length, byteorder='little')   # 不定长
-                return [_opcode, _compiled_byte]
+                _compiled_byte = int_.to_bytes(length,
+                                               byteorder='little')  # 不定长
 
             else:
                 return [line]
+
+            return [_opcode, _compiled_byte]
 
         self._asm_data = list(map(_c_operand, self._asm_data))
 
@@ -232,7 +253,8 @@ class BVMGenerate(object):
                     length_current_line = 1 + length_opr
                 asm_pos_table[current_compiled_pos] = list_
                 if jump_mark_flag:
-                    self._jump_mark_table[jump_mark_name] = current_compiled_pos
+                    self._jump_mark_table[
+                        jump_mark_name] = current_compiled_pos
                     jump_mark_name = None
                     jump_mark_flag = False
                 current_compiled_pos += length_current_line
@@ -244,8 +266,9 @@ class BVMGenerate(object):
                 loc_str = _group[1]
                 mark_pos = self._jump_mark_table.get(loc_str, None)
                 relative_pos = mark_pos - key
-                _compiled_operand = relative_pos.to_bytes(
-                    2, byteorder='little', signed=True)
+                _compiled_operand = relative_pos.to_bytes(2,
+                                                          byteorder='little',
+                                                          signed=True)
                 asm_pos_table[key] = [opcode, _compiled_operand]
         self._asm_data = list(asm_pos_table.values())
 
@@ -256,22 +279,24 @@ class BVMGenerate(object):
                 return mdl.compiler_bytecode(list_[0])
             else:
                 return mdl.compiler_bytecode(list_[0], list_[1])
+
         self._main_bytecode_list = list(map(_c_bcode, self._asm_data))
 
     def _compile_named_func(self):
         # 0x00 ~ 0x04
-        self._named_fn_bytecode_positions = {}   # 块1表
-        for k, v in self._jump_mark_table.items():   # remove 'location_xxx' mark
+        self._named_fn_bytecode_positions = {}  # 块1表
+        for k, v in self._jump_mark_table.items(
+        ):  # remove 'location_xxx' mark
             if 'location' not in k:
                 self._named_fn_bytecode_positions[k] = v
 
-        self._named_fn_name_str_positions = {}   # 块2表
+        self._named_fn_name_str_positions = {}  # 块2表
 
         name_str_pos_in_bytes = 0
         self._str_tbl3_list = []
 
         _named_fn_block3_data = {}
-        _named_fn_block4 = self._named_fn_accept_num    # 块4表
+        _named_fn_block4 = self._named_fn_accept_num  # 块4表
         for k in self._named_fn_bytecode_positions.keys():
             # _str_group = k.split('::')
             # if len(_str_group) == 1:
@@ -289,7 +314,7 @@ class BVMGenerate(object):
             name_str_pos_in_bytes += len(byte_)
         print()
 
-        self._named_fn_block3_positions = {}     # 块3表
+        self._named_fn_block3_positions = {}  # 块3表
         block3_pos_in_bytes = 0
         # block3_cls_name_pos_flag = 0
         _block3_list = []
@@ -325,7 +350,7 @@ class BVMGenerate(object):
         stack2_size = self._int_to_4bytes(512)
         # 0x30
         bytes_constructor_offset = func_names_ofs + (func_names_num * 0x10)
-        bytes_main_offset = None    # 构造体偏移 + 大小
+        bytes_main_offset = None  # 构造体偏移 + 大小
         bytes_strtbl_offset = None  # 主脚本偏移 + 大小
         bytes_clsname_offset = None
         # bytes_strtbl2_offset = None # 主脚本用的 string 偏移 + 大小
@@ -415,12 +440,20 @@ class BVMGenerate(object):
         bytes_clsname_offset = self._int_to_4bytes(bytes_clsname_offset)
 
         _lst = [
-            bytes_head_type, bytes_head_type2, bytes_head_s1,
-            bytes_head_s2, global_vars_num, global_vars_ofs,
-            func_names_num, func_names_ofs, stack1_size, stack2_size,
-
-            bytes_constructor_offset, bytes_main_offset,
-            bytes_strtbl_offset, bytes_clsname_offset,
+            bytes_head_type,
+            bytes_head_type2,
+            bytes_head_s1,
+            bytes_head_s2,
+            global_vars_num,
+            global_vars_ofs,
+            func_names_num,
+            func_names_ofs,
+            stack1_size,
+            stack2_size,
+            bytes_constructor_offset,
+            bytes_main_offset,
+            bytes_strtbl_offset,
+            bytes_clsname_offset,
             bytes_static1,
             self._int_to_4bytes(bytes_padding4_size),
             bytes_static2,
@@ -428,10 +461,9 @@ class BVMGenerate(object):
         ]
         header_bytes = b''.join(_lst)
         _lst2 = [
-            header_bytes, global_vars_bytes, func_names_bytes,
-            construct_bytes, bytecode_bytes, str_table1_bytes,
-            str_table2_bytes, str_table3_bytes,
-            func_args_cls_types_bytes
+            header_bytes, global_vars_bytes, func_names_bytes, construct_bytes,
+            bytecode_bytes, str_table1_bytes, str_table2_bytes,
+            str_table3_bytes, func_args_cls_types_bytes
         ]
         full_bytes = b''.join(_lst2)
         if len(full_bytes) < bytes_padding16_size:
@@ -452,7 +484,7 @@ class BVMGenerate(object):
         with open(file_path, 'wb') as f:
             f.write(b''.join(self._asm_data))
 
-    def build_file(self, file_path: Path):
+    def output_file(self, file_path: Path):
         self._compile_global_variables()
         self._compile_str()
         self._compile_operand()
@@ -465,44 +497,7 @@ class BVMGenerate(object):
             f.write(bytes_buffer)
 
 
-def run_main():
-    args = parse_args()
-
-    if args.source_path is None:
-        str_ = input('drag file here and press Enter: ')
-        source_path = Path(str_.strip('"'))
-    else:
-        source_path = Path(args.source_path)
-
-    if args.destination_path:
-        output_path = Path(args.destination_path)
-    else:
-        output_path = source_path.with_suffix('.bvm')
-
-    if source_path.suffix.lower() in ('.asm', '.txt'):
-        print('working...')
-        bvm_from_asm = BVMGenerate(debug_flag=args.debug)
-        bvm_from_asm.read(source_path)
-        bvm_from_asm.build_file(output_path)
-        print('done!')
-
-
-def parse_args():
-    description = 'bvm file compiler'
-    parse = argparse.ArgumentParser(description=description)
-
-    help_ = 'input asm or txt file path'
-    parse.add_argument('source_path', help=help_, nargs='?')
-    help_ = 'output bvm file path'
-    parse.add_argument('destination_path', help=help_, nargs='?')
-
-    help_ = 'enable debug mode'
-    parse.add_argument('-d', '--debug', help=help_,
-                       action='store_true', default=False)
-    parse.add_argument('-t', action='store_true')
-
-    return parse.parse_args()
-
-
 if __name__ == "__main__":
-    run_main()
+    from time import sleep
+    print('none')
+    sleep(4)

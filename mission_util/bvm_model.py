@@ -400,6 +400,8 @@ def compiler_bytecode(opcode:str, compiled_operand:bytes = None):
         'exit': b'\x30',
         # 0,
         'store': b'\x36',
+        # unused in retail
+        'printstr': b'\x32',
     }
     fixed_opr = {
         # 1
@@ -423,6 +425,9 @@ def compiler_bytecode(opcode:str, compiled_operand:bytes = None):
         'testne': b'\x23',
         'testle': b'\x24',
         'testl': b'\x25',
+        # unused in retail
+        'printnum': b'\x31',
+
     }
     dynamic_opr = {
         # dynamic

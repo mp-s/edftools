@@ -5,9 +5,11 @@
 ## Usage: ##   
 
 ### Mission Tools:  
-Two methods:  
+_Two methods:_  
 ###### Using exe file: [release](https://github.com/mp-s/edftools/releases/latest)
-###### Using mission_tools.py file
+- drag and drop to `EXE`  
+- run `EXE` and drag input file.  
+###### Using `mission_tools.py` file
 - If Windows has a Python interpreter associated with `.py`, you can:
     - drag and drop to `mission_tools.py`  
     - run `mission_tools.py` and drag input file.  
@@ -28,28 +30,20 @@ Two methods:
         -h, --help        show this help message and exit
         -d, --debug       enable debug mode
         ```
-- Single Executable tool :
 
-    - bvm_compiler.py    
-    - bvm_decompiler.py  
-    - rmpa_parser.py     
-    - rmpa_builder.py    
-
-- Dependency file  
-    - bvm_model.py  
+- Dependent File  
+    - mission_util/*
     - common_utils.py  
-    - rmpa_config.py  
-    - asm_more_readable.py  
   
   
   
-- ***About RMPA_builder:***  
-        - *supported:`"route type"`  ` "shape type"`  ` "spawnpoint type"`   
-        - *camera type in json will ignore*  
+- ***About JSON->RMPA:***  
+        - *supported:`route type`  ` shape type`  ` spawnpoint type`   
+        - *`camera type` in json will ignore*  
         - *Recommended using sample-rmpa.json to generate*   
   
-### Extra Tool:
-- .AWE and .AWB file:
+### Extra Tools:
+- `.AWE` and `.AWB` file:
     - If Windows has a Python interpreter associated with .py:  
         - run `.py` and drag input file supported.  
     - command prompt help:
@@ -71,7 +65,7 @@ Two methods:
         ```
 
 
-- .RAB or .MRAB file ***extract only***:
+- `.RAB` or `.MRAB` file ***extract only***:
     -   ```
         usage: rab_exract.py [-i INPUT] [source_path]
 

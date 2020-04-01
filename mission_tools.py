@@ -7,10 +7,6 @@ from mission_util.bvm_decompiler import BvmData
 from mission_util.rmpa_builder import RMPAGenerate
 from mission_util.rmpa_parser import RMPAParse
 
-BvmData.build_file = BvmData.output_file
-RMPAGenerate.build_file = RMPAGenerate.generate_rmpa
-RMPAParse.build_file = RMPAParse.generate_json
-
 
 def show_exception_and_exit(exc_type, exc_value, tb):
     import traceback
@@ -32,11 +28,29 @@ def parse_args():
     parse.add_argument('destination_path', help=help_, nargs='?')
 
     help_ = 'enable debug mode'
-    parse.add_argument('-d', '--debug', help=help_,
-                       action='store_true', default=False)
+    parse.add_argument('-d',
+                       '--debug',
+                       help=help_,
+                       action='store_true',
+                       default=False)
     # parse.add_argument('-t', action='store_true')
 
     return parse.parse_args()
+
+
+dest_type_tbl = {
+    '.bvm': '.asm',
+    '.asm': '.bvm',
+    '.rmpa': '.json',
+    '.json': '.rmpa',
+}
+
+src_type_tbl = {
+    '.bvm': BvmData,
+    '.asm': BVMGenerate,
+    '.rmpa': RMPAParse,
+    '.json': RMPAGenerate,
+}
 
 
 def main():
@@ -48,34 +62,32 @@ def main():
     else:
         source_path = Path(args.source_path)
 
-    dest_type_tbl = {
-        '.bvm': '.asm',
-        '.asm': '.bvm',
-        '.rmpa': '.json',
-        '.json': '.rmpa',
-    }
-
     src_suffix = source_path.suffix.lower()
 
     if args.destination_path:
         output_path = Path(args.destination_path)
     else:
-        output_path = source_path.with_suffix(dest_type_tbl.get(src_suffix, ''))
+        output_path = source_path.with_suffix(dest_type_tbl.get(
+            src_suffix, ''))
 
-    src_type_tbl = {
-        '.bvm': BvmData,
-        '.asm': BVMGenerate,
+    convert(src_suffix, source_path, output_path, debug=args.debug)
 
-        '.rmpa': RMPAParse,
-        '.json': RMPAGenerate,
-    }
-
+def convert(src_suffix: str, source_path, output_path, debug=False):
     _obj_class = src_type_tbl.get(src_suffix)
     print('working...')
-    obj = _obj_class(args.debug)
+    obj = _obj_class(debug)
     obj.read(source_path)
-    obj.build_file(output_path)
+    obj.output_file(output_path)
     print('done!')
+
+
+def get_file_type(path: Path):
+    header_types = {b'BVM ': '.bvm', b'\x00PMR': '.rmpa'}
+    with open(path, mode='rb') as f:
+        header = f.read(4)
+        src_type = header_types.get(header, header_types.get(header[::-1]))
+
+    return src_type
 
 
 if __name__ == "__main__":
