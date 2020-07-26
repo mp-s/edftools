@@ -111,10 +111,8 @@ class BvmData:
     def __asm_decompiler(self, chunk: bytes, buffer_dict: dict) -> dict:
         ''' bytecode to assembly code '''
         offset = 0
-        operands_use_uint = [
-            'cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3'
-        ]
-        operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
+        operands_use_uint = mdl.operands_use_uint
+        operands_use_offset = mdl.operands_use_offset
 
         while (offset < len(chunk)):
             opcode = chunk[offset:offset + 1]
@@ -243,7 +241,7 @@ class BvmData:
     def get_all_str(self):
         '''debug test'''
         def _get_offset(offset_name: str) -> int:
-            offset = mdl.offset_list.get(offset_name)
+            offset = mdl.offset_list(offset_name)
             return self._get_int(self.data[offset:offset + 4])
 
         index = _get_offset('string_chunk_index')

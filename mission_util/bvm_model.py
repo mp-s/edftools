@@ -1,5 +1,6 @@
 
-offset_list = {
+
+_offset_list = {
     'pointer_list_count': 0x18,
     'pointer_list_index': 0x1c,
     'pointer_list2_count': 0x20,
@@ -11,6 +12,15 @@ offset_list = {
     'data_size_offset_index': 0x44,
     'data_align_index': 0x4c
 }
+
+
+def offset_list(key: str) -> int:
+    return _offset_list.get(key)
+
+
+operands_use_uint = ['cuscall', 'cuscall0', 'cuscall1', 'cuscall2', 'cuscall3']
+
+operands_use_offset = ['jmp', 'call', 'jmpf', 'jmpt', 'jmpe', 'jmpne']
 
 '''
 |-----|
