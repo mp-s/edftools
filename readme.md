@@ -18,9 +18,9 @@ _Two methods:_
     - using launcher: `py -3 mission_tools.py [args]`  
     - help message:  
         ```
-        usage: mission_tools.py [-h] [-d] [source_path] [destination_path]
+        usage: mission_tools.py [-h] [-d] [--jmp4] [source_path] [destination_path]
 
-        bvm/rmpa/json/asm converter
+        bvm<-->asm converter, rmpa<-->json converter
 
         positional arguments:
         source_path       input file path
@@ -29,6 +29,7 @@ _Two methods:_
         optional arguments:
         -h, --help        show this help message and exit
         -d, --debug       enable debug mode
+        --jmp4
         ```
 
 - Dependent File  

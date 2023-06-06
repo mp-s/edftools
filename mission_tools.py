@@ -19,7 +19,7 @@ sys.excepthook = show_exception_and_exit
 
 
 def parse_args():
-    description = 'bvm/rmpa/json/asm converter'
+    description = 'bvm<-->asm converter, rmpa<-->json converter'
     parse = argparse.ArgumentParser(description=description)
 
     help_ = 'input file path'
@@ -33,7 +33,7 @@ def parse_args():
                        help=help_,
                        action='store_true',
                        default=False)
-    # parse.add_argument('-t', action='store_true')
+    parse.add_argument('--jmp4', action='store_true', default=False)
 
     return parse.parse_args()
 
@@ -70,14 +70,14 @@ def main():
         output_path = source_path.with_suffix(dest_type_tbl.get(
             src_suffix, ''))
 
-    convert(src_suffix, source_path, output_path, debug=args.debug)
 
-def convert(src_suffix: str, source_path, output_path, debug=False):
     _obj_class = src_type_tbl.get(src_suffix)
     print('working...')
-    obj = _obj_class(debug)
-    obj.read(source_path)
-    obj.output_file(output_path)
+    _obj = _obj_class(args.debug)
+    if args.jmp4 and isinstance(_obj, BVMGenerate):
+        _obj.jmp4_flag = True
+    _obj.read(source_path)
+    _obj.output_file(output_path)
     print('done!')
 
 

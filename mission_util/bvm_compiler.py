@@ -7,6 +7,7 @@ from . import bvm_model as mdl
 
 
 class BVMGenerate(object):
+    jmp4_flag = False
     def __init__(self, debug_flag: bool = False):
         # self._trimed_data = None
         self._debug_flag = debug_flag
@@ -266,9 +267,16 @@ class BVMGenerate(object):
                 loc_str = _group[1]
                 mark_pos = self._jump_mark_table.get(loc_str, None)
                 relative_pos = mark_pos - key
-                _compiled_operand = relative_pos.to_bytes(2,
-                                                          byteorder='little',
-                                                          signed=True)
+                if self.jmp4_flag:
+                    _use_size = 4
+                else:
+                    _use_size = 2
+                try:
+                    _compiled_operand = relative_pos.to_bytes(_use_size,
+                                                            byteorder='little',
+                                                            signed=True)
+                except OverflowError as err:
+                    print("file size huge, maybe using '--jmp4' args to fix")
                 asm_pos_table[key] = [opcode, _compiled_operand]
         self._asm_data = list(asm_pos_table.values())
 
