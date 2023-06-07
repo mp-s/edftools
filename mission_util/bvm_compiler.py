@@ -289,7 +289,8 @@ class BVMGenerate(object):
                                                             byteorder='little',
                                                             signed=True)
                 except OverflowError as err:
-                    print("file size huge, maybe using '--jmp4' args to fix")
+                    print("Attention!-----File size huge, maybe using '--jmp4' args to fix")
+                    raise
                 asm_pos_table[key] = [opcode, _compiled_operand]
         self._asm_data = list(asm_pos_table.values())
 
