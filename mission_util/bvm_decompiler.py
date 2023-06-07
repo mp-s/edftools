@@ -290,7 +290,7 @@ class BvmData:
         end_bytes = b'\x00\x00'
         str_buffer = []
         utf16_byte = b''
-        offset = self._get_int(offset) + index
+        offset = self._get_int(offset, True) + index
 
         while (end_bytes != utf16_byte):
             utf16_byte = self.data[offset:offset + 2]

@@ -65,20 +65,20 @@ asm_opcode = {
     b'\x12': ('ftoi', 0),   # float -> int 
     b'\x13': ('itof', 0),   # int -> float 
     # global vars
-    b'\x14': ('loadabs', 0), b'\x54': ('loadabs', 1),
+    b'\x14': ('loadabs', 0), b'\x54': ('loadabs', 1), b'\x94': ('loadabs', 2), b'\xd4': ('loadabs', 4),
     # next at 33
     b'\x15': ('push', 0), b'\x55': ('push', 1), b'\x95': ('push', 2), b'\xd5': ('push', 4),
     # global vars
-    b'\x16': ('storeabs', 0), b'\x56': ('storeabs', 1),
+    b'\x16': ('storeabs', 0), b'\x56': ('storeabs', 1), b'\x96': ('storeabs', 2), b'\xd6': ('storeabs', 4),
     # script-stack
-    b'\x17': ('loadrel', 0), b'\x57': ('loadrel', 1),
-    b'\x18': ('pushrel', 0), b'\x58': ('pushrel', 1), b'\x98': ('pushrel', 2),
-    b'\x19': ('storerel', 0), b'\x59': ('storerel', 1),
+    b'\x17': ('loadrel', 0), b'\x57': ('loadrel', 1), b'\x97': ('loadrel', 2), b'\xd7': ('loadrel', 4),
+    b'\x18': ('pushrel', 0), b'\x58': ('pushrel', 1), b'\x98': ('pushrel', 2), b'\xd8': ('pushrel', 4),
+    b'\x19': ('storerel', 0), b'\x59': ('storerel', 1), b'\x99': ('storerel', 2), b'\xd9': ('storerel', 4),
     # push string address
-    b'\x1a': ('pushstr', 0), b'\x5a': ('pushstr', 1), b'\x9a': ('pushstr', 2),
+    b'\x1a': ('pushstr', 0), b'\x5a': ('pushstr', 1), b'\x9a': ('pushstr', 2), b'\xda': ('pushstr', 4),
     # script-stack
-    b'\x1b': ('addrel', 0), b'\x5b': ('addrel', 1), b'\x9b': ('addrel', 2),
-    b'\x1c': ('subrel', 0), b'\x5c': ('subrel', 1),
+    b'\x1b': ('addrel', 0), b'\x5b': ('addrel', 1), b'\x9b': ('addrel', 2), b'\xdb': ('addrel', 4),
+    b'\x1c': ('subrel', 0), b'\x5c': ('subrel', 1), b'\x9c': ('subrel', 2), b'\xdc': ('subrel', 4),
 
 
     # pop B
@@ -98,7 +98,7 @@ asm_opcode = {
     # pop A
     # jmp* location_xxx 
     b'\x26': ('jmpf', 0), b'\x66': ('jmpf', 1), b'\xa6': ('jmpf', 2), b'\xe6': ('jmpf', 4),     # if A == 0, jmp
-    b'\x27': ('jmpt', 0), b'\x67': ('jmpt', 1), b'\xa7': ('jmpt', 2),                           # if A != 0, jmp
+    b'\x27': ('jmpt', 0), b'\x67': ('jmpt', 1), b'\xa7': ('jmpt', 2), b'\xe7': ('jmpt', 4),                           # if A != 0, jmp
     b'\x28': ('jmp', 0), b'\x68': ('jmp', 1), b'\xa8': ('jmp', 2), b'\xe8': ('jmp', 4),
     
     b'\x29': ('call', 0), b'\x69': ('call', 1), b'\xa9': ('call', 2), b'\xe9': ('call', 4),
@@ -122,8 +122,8 @@ asm_opcode = {
     # pop B
     # pop A
     # jmp* location_xxx 
-    b'\x34': ('jmpne', 0), b'\x74': ('jmpne', 1), b'\xb4': ('jmpne', 2),    # pop B,pop A, if A != B, jmp
-    b'\x35': ('jmpe', 0), b'\x75': ('jmpe', 1), b'\xb5': ('jmpe', 2),       # pop B,pop A, if A == B, jmp
+    b'\x34': ('jmpne', 0), b'\x74': ('jmpne', 1), b'\xb4': ('jmpne', 2), b'\xf4': ('jmpne', 4),    # pop B,pop A, if A != B, jmp
+    b'\x35': ('jmpe', 0), b'\x75': ('jmpe', 1), b'\xb5': ('jmpe', 2), b'\xf5': ('jmpe', 4),       # pop B,pop A, if A == B, jmp
 
     # pop B
     # pop A

@@ -61,6 +61,8 @@ class BVMGenerate(object):
                 line_offset = index
                 break
         self._trimed_data = _trimed_data[line_offset:]
+        if self._debug_flag:
+            print("line_offset ", line_offset)
 
     def _compile_global_variables(self):
         ''' 编译全局变量, 初始化变量的编译 
@@ -159,6 +161,8 @@ class BVMGenerate(object):
             _compiled_byte = str_.encode(encoding='utf-16le') + bytes(2)
             current_str_offest += len(_compiled_byte)  # next str position
             self._str_tbl_bytes_list.append(_compiled_byte)
+        if self._debug_flag:
+            print("string len", len(self._str_tbl_bytes_list))
 
 
     def _compile_operand(self):
@@ -184,8 +188,14 @@ class BVMGenerate(object):
             if 'pushstr' == _opcode:  # pushstr     "some_string"
                 _str = _operand.strip('"')
                 _str_pos = self._str_pos_table.get(_str)  # int
-                length = 4 if _str_pos >> 16 else (2 if _str_pos >> 8 else 1)
-                _compiled_byte = _str_pos.to_bytes(length, byteorder='little')
+                # length = 4 if _str_pos >> 16 else (2 if _str_pos >> 8 else 1)
+                if -128 < _str_pos <= 127:
+                    length = 1
+                elif -32768 < _str_pos <= 32767:
+                    length = 2
+                else:
+                    length = 4
+                _compiled_byte = _str_pos.to_bytes(length, byteorder='little', signed=True)
                 # pushstr     (int)    --(0xHHHHHHHH)--
 
             elif _operand[0:2].lower() == '0x':  # 0xhh
@@ -245,7 +255,10 @@ class BVMGenerate(object):
                 _group = list_
                 code_asm = _group[0].split()
                 if 'jmp' in _group[0] or 'call' == code_asm[0]:
-                    length_current_line = 3
+                    if self.jmp4_flag:
+                        length_current_line = 5
+                    else:
+                        length_current_line = 3
                     list_ = list_[0].split()
                 elif len(_group) == 1:
                     length_current_line = 1
@@ -289,6 +302,8 @@ class BVMGenerate(object):
                 return mdl.compiler_bytecode(list_[0], list_[1])
 
         self._main_bytecode_list = list(map(_c_bcode, self._asm_data))
+        if self._debug_flag:
+            print("main bytecode length", len(self._main_bytecode_list))
 
     def _compile_named_func(self):
         # 0x00 ~ 0x04
@@ -341,6 +356,8 @@ class BVMGenerate(object):
         self._cls_name_bytes_len = len(clsname_bytes)
         _block3_list.append(clsname_bytes)
         self._fn_arg_bytes_list = _block3_list
+        if self._debug_flag:
+            print("named func bytes len", len(_block3_list))
 
     def _generate_target(self):
         ''' 生成整个文件 '''
@@ -401,6 +418,13 @@ class BVMGenerate(object):
         func_args_cls_types_bytes = b''.join(self._fn_arg_bytes_list)
         bytes_clsname_offset = fn_arg_types_offset + \
             len(func_args_cls_types_bytes) - self._cls_name_bytes_len
+        if self._debug_flag:
+            print("bytecode_bytes size", len(bytecode_bytes))
+            print("str_tbl1_size", str_tbl1_size)
+            print("bytes_strtbl2_offset", bytes_strtbl2_offset)
+            print("bytes_strtbl3_offset", bytes_strtbl3_offset)
+            print("fn_arg_types_offset", fn_arg_types_offset)
+            print("bytes_clsname_offset", bytes_clsname_offset)
 
         # global var pos convert
         gbl_var_abs_pos_list = []
@@ -448,18 +472,24 @@ class BVMGenerate(object):
         bytes_clsname_offset = self._int_to_4bytes(bytes_clsname_offset)
 
         _lst = [
+            # 0x00
             bytes_head_type,
             bytes_head_type2,
+            # 0x08
             bytes_head_s1,
+            # 0x10
             bytes_head_s2,
             global_vars_num,
             global_vars_ofs,
+            # 0x20
             func_names_num,
             func_names_ofs,
             stack1_size,
             stack2_size,
+            # 0x30
             bytes_constructor_offset,
             bytes_main_offset,
+            # 0x38
             bytes_strtbl_offset,
             bytes_clsname_offset,
             bytes_static1,
