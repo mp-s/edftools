@@ -124,12 +124,24 @@ class BVMGenerate(object):
                             operand = struct.pack('<f', operand_float)
                         else:
                             operand_int = int(operand)
-                            operand = operand_int.to_bytes(1,
+                            if -128 < operand_int <= 127:
+                                length = 1
+                            elif -32768 < operand_int <= 32767:
+                                length = 2
+                            else:
+                                length = 4
+                            operand = operand_int.to_bytes(length,
                                                            byteorder='little',
                                                            signed=True)
                     else:
                         operand_int = int(operand)
-                        operand = operand_int.to_bytes(1, byteorder='little')
+                        if operand_int >> 16:
+                            length = 4
+                        elif operand_int >> 8:
+                            length = 2
+                        else:
+                            length = 1
+                        operand = operand_int.to_bytes(length, byteorder='little')
                     line_bytecode = mdl.compiler_bytecode(opcode, operand)
                 self._constructor_bytecode_list.append(line_bytecode)
 
