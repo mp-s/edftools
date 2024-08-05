@@ -94,6 +94,7 @@ _Two methods:_
 
 ## Thanks to
 * [EDF's Discord Channel](https://discord.gg/bfGjgTM) #edf-modding community
+    * [Earth-Defence-Force-Documentation](https://github.com/KCreator/Earth-Defence-Force-Documentation/wiki)
     * [@KittopiaCreator's project](https://gitlab.com/kittopiacreator/edf-tools)  
     * [@Zeddy's project](https://github.com/zeddidragon/sgott)
 
